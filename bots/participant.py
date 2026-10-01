@@ -33,6 +33,7 @@ PARAMS = {
     # opening
     "open_div": 2,            # launch when (a-1) >= (49 - t - transit) // open_div
     "open_end": 50,
+    "open_plan_s": 1.5,
     # garrison / defense
     "garrison_min": 2,
     "garrison_frac_hidden": 0.5,    # fraction of largest possible hidden stack kept home
@@ -156,6 +157,8 @@ class Bot:
         self.rings = []                    # (cell, exact_d or None for >=7)
         self.plan = None
         self.cyc = None
+        self.open_cfg = {"div": 2.0, "w_free": 1.0, "w_dist": 0.3, "w_toward": 0.15, "late": 44}
+        self.open_dc = None
         self.t_start = time.perf_counter()
         self.budget_s = PARAMS["soft_budget_ms"] / 1000.0
         self.last_label = ""
@@ -264,6 +267,12 @@ class Bot:
                 self.prior[c] = sum(w * x for w, x in zip(PRIOR_W, f)) + PRIOR_B
         except Exception:
             self.prior = {c: 0.0 for c in cands}
+        try:
+            self.plan_opening()
+        except Exception:
+            if DEBUG:
+                raise
+            self.open_cfg = {"div": 2.0, "w_free": 1.0, "w_dist": 0.3, "w_toward": 0.15, "late": 44}
 
     def cand_features(self, c):
         """Static features of a spawn candidate (relative to our general)."""
@@ -860,6 +869,7 @@ class Bot:
         t = self.turn
         A, O, T = self.A, self.O, self.T
         g = self.general
+        cfg = self.open_cfg
         # 1) continue a wave: a non-general own cell with >= 2 adjacent to neutral
         best, bk = None, None
         for i in range(self.n):
@@ -884,24 +894,81 @@ class Bot:
             dfront, step = self.frontier_info(g)
             if step is not None:
                 transit = max(0, dfront - 1)
-                need = (49 - t - transit) // PARAMS["open_div"]
-                if a - 1 >= need or (t >= 44 and a >= 2):
+                need = int((49 - t - transit) / cfg["div"])
+                if a - 1 >= need or (t >= cfg["late"] and a >= 2):
                     return self.mv(g, step)
         return PASS
 
     def open_score(self, j):
         """Prefer open areas, away from the general, toward the enemy candidates."""
+        cfg = self.open_cfg
         free = 0
         for k, _ in self.nb[j]:
             if self.pas[k] and self.O[k] == 0:
                 free += 1
-        tgt = self.belief_target()
-        toward = 0
-        if tgt >= 0:
-            dc = self.cand_dist.get(tgt)
-            if dc:
-                toward = -dc[j] * PARAMS["expand_toward_w"]
-        return free + 0.3 * min(self.dist_g[j], 12) + toward
+        dc = self.open_dc
+        toward = -dc[j] * cfg["w_toward"] if dc else 0.0
+        return cfg["w_free"] * free + cfg["w_dist"] * min(self.dist_g[j], 12) + toward
+
+    def plan_opening(self):
+        """Pick the opening configuration that maximises land at turn 50 in a
+        single-player simulation (the opponent cannot interfere this early)."""
+        g = self.general
+        tgt = max(self.prior, key=self.prior.get) if self.prior else -1
+        self.open_dc = self.cand_dist.get(tgt) if tgt >= 0 else None
+        best, bkey = None, None
+        save = (getattr(self, "O", None), getattr(self, "A", None), getattr(self, "T", None), self.turn)
+        deadline = time.perf_counter() + PARAMS["open_plan_s"]
+        for div in (2.0, 1.7, 2.4, 1.5):
+            for w_free, w_dist in ((1.0, 0.3), (1.0, 0.0), (0.5, 0.6), (1.5, 0.3)):
+                for w_toward in (0.15, 0.0):
+                    if time.perf_counter() > deadline:
+                        break
+                    cfg = {"div": div, "w_free": w_free, "w_dist": w_dist, "w_toward": w_toward, "late": 44}
+                    land50, frontier = self.sim_opening(cfg)
+                    key = (land50, frontier + (1 if w_toward > 0 else 0))
+                    if bkey is None or key > bkey:
+                        bkey, best = key, cfg
+        self.O, self.A, self.T, self.turn = save
+        self.open_cfg = best or {"div": 2.0, "w_free": 1.0, "w_dist": 0.3, "w_toward": 0.15, "late": 44}
+        self.open_expect = bkey
+
+    def sim_opening(self, cfg):
+        n = self.n
+        g = self.general
+        O = [0] * n
+        A = [0] * n
+        O[g] = 1
+        A[g] = 1
+        self.T = [1] * n
+        self.open_cfg = cfg
+        W = self.W
+        for t in range(50):
+            self.O, self.A, self.turn = O, A, t
+            a = self.opening()
+            if a and a[0] == 0:
+                i = a[1] * W + a[2]
+                dr, dc = DIRS[a[3]]
+                j = (a[1] + dr) * W + a[2] + dc
+                amt = A[i] // 2 if a[4] == 1 else A[i] - 1
+                if amt > 0 and O[i] == 1 and self.pas[j]:
+                    A[i] -= amt
+                    if O[j] == 1:
+                        A[j] += amt
+                    else:
+                        O[j] = 1
+                        A[j] = amt
+            if (t + 1) % 2 == 0:
+                A[g] += 1
+        land = sum(O)
+        frontier = 0
+        for i in range(n):
+            if O[i] == 0 and self.pas[i]:
+                for j, _ in self.nb[i]:
+                    if O[j] == 1:
+                        frontier += 1
+                        break
+        return land, frontier
 
     def frontier_info(self, src):
         """(distance to nearest neutral cell through own cells, first step)."""
