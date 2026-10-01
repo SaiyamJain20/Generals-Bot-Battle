@@ -56,6 +56,13 @@ SPACE = {
     "intercept_dist": (1, 8, "int"),
     "kill_margin": (0, 8, "int"),
     "open_div": (1, 3, "int"),
+    "threat_vis_range": (6, 18, "int"),
+    "threat_decay": (0.3, 1.5, "float"),
+    "w_build": (3.0, 10.0, "float"),
+    "w_garrison": (2.0, 10.0, "float"),
+    "feed_min": (2, 20, "int"),
+    "v_near_home": (0.0, 5.0, "float"),
+    "fortress_turn": (650, 790, "int"),
 }
 
 

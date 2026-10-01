@@ -39,8 +39,8 @@ PARAMS = {
     "garrison_frac_hidden": 0.5,    # fraction of largest possible hidden stack kept home
     "garrison_cap_frac": 0.5,      # never keep more than this fraction of our army at home
     "threat_margin": 2,
-    "threat_vis_range": 10,
-    "threat_decay": 1.0,
+    "threat_vis_range": 16,
+    "threat_decay": 0.5,
     # option weights
     "w_garrison": 6.0,
     "w_garrison_urgent": 9.0,
@@ -115,6 +115,8 @@ PARAMS = {
 # learned spawn prior (logistic regression on generator samples; see learn/train_prior.py)
 PRIOR_W = [-0.2466, 0.1374, 0.0267, 0.6231, 1.4779, 0.2212, -0.1133, 0.0064, -0.049, 13.246]
 PRIOR_B = -5.1142
+
+PARAMS.update({'open_div': 3, 'open_end': 50, 'garrison_min': 2, 'garrison_frac_hidden': 0.4553, 'garrison_cap_frac': 0.7875, 'threat_margin': 2, 'w_garrison': 6.0, 'w_garrison_urgent': 9.0, 'hidden_stack_frac': 0.6299, 'track_min': 8, 'track_frac': 0.12, 'track_ttl': 30, 'track_threat_dist': 7, 'w_build': 7.0, 'w_cycle': 0.9767, 'w_launch': 5.3051, 'w_scout': 0.2221, 'attack_root_front': 0, 'scout_start': 60, 'scout_min': 3, 'scout_max_frac': 0.3524, 'regather_budget': 8, 'v_neutral': 1.1132, 'v_enemy': 2.1519, 'v_kill': 0.0981, 'v_ecastle': 8.0, 'v_near_home': 2.0, 'bonus_mult': 2.7592, 'bonus_window': 0, 'bonus_lead': 0, 'toward_w': 0.3, 'home_r': 7, 'v_home': 1.5, 'w_home_fill': 1.5815, 'home_fill_start': 50, 'small_min': 3, 'small_frac': 0.0131, 'gen_move_pen': 0.6, 'castle_start': 184, 'castle_stop': 715, 'castle_every': 79, 'castle_horizon': 900, 'castle_reserve': 1, 'castle_safe_dist': 2, 'castle_val_min': 10.0, 'castle_move_w': 1.0, 'castle_price_w': 2.149, 'castle_safety_w': 0.0488, 'castle_gather_budget': 10, 'castle_home_n': 2, 'castle_home_maxd': 3, 'castle_home_w': 6.0, 'gather_budget': 30, 'gather_default_budget': 40, 'launch_max': 49, 'min_stack': 9, 'feed_min': 6, 'kill_margin': 4, 'intercept_dist': 1, 'belief_enemy_w': 1.9636, 'attack_min_army': 32, 'soft_budget_ms': 45, 'first_budget_ms': 3000, 'fortress_turn': 740, 'dt_stage_turn': 760, 'aggro_turn': 1000, 'expand_toward_w': 0.15})
 
 DIRS = ((-1, 0), (1, 0), (0, -1), (0, 1))
 PASS = [1, 0, 0, 0, 0]
