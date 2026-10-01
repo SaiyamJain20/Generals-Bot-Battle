@@ -116,9 +116,10 @@ def finish(res):
     for p in (0, 1):
         ts = sorted(res["times"][p])
         if ts:
+            rest = sorted(res["times"][p][1:]) or [0.0]
             res.setdefault("tstats", []).append({
-                "first": res["times"][p][0], "max": ts[-1],
-                "p99": ts[min(len(ts) - 1, int(0.99 * len(ts)))], "mean": sum(ts) / len(ts)})
+                "first": res["times"][p][0], "max": rest[-1],
+                "p99": rest[min(len(rest) - 1, int(0.99 * len(rest)))], "mean": sum(ts) / len(ts)})
         else:
             res.setdefault("tstats", []).append(None)
     del res["times"]
@@ -162,12 +163,14 @@ def summarize(results, label="A"):
     tmax = max((t["max"] for r in results for t in r["tstats"] if t), default=0)
     a_p99 = [r["tstats"][r["a_player"]]["p99"] for r in results if r["tstats"][r["a_player"]]]
     a_max = [r["tstats"][r["a_player"]]["max"] for r in results if r["tstats"][r["a_player"]]]
+    a_first = [r["tstats"][r["a_player"]]["first"] for r in results if r["tstats"][r["a_player"]]]
     return {"n": n, "W": w, "D": d, "L": l, "score": round(score, 4),
             "elo": round(elo(score), 1), "elo_lo": round(elo(score - 1.96 * se), 1),
             "elo_hi": round(elo(score + 1.96 * se), 1),
             "avg_turns": round(sum(r["turns"] for r in results) / n, 1),
             "forfeits": forfeits, "A_p99_ms_max": round(max(a_p99, default=0), 2),
-            "A_max_ms": round(max(a_max, default=0), 2), "any_max_ms": round(tmax, 2)}
+            "A_max_ms": round(max(a_max, default=0), 2), "A_first_ms": round(max(a_first, default=0), 1),
+            "any_max_ms": round(tmax, 2)}
 
 
 def run_match(a, b, games, workers=8, map_offset=0, limit_ms=None, params=(None, None),

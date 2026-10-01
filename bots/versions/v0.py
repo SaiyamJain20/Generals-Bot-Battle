@@ -48,13 +48,7 @@ PARAMS = {
     "track_threat_dist": 12,
     "w_build": 7.0,
     "w_cycle": 1.2,
-    "w_launch": 3.2,
-    "w_scout": 0.9,
-    "attack_root_front": 0,
-    "scout_start": 60,
-    "scout_min": 3,
-    "scout_max_frac": 0.15,
-    "regather_budget": 8,
+    "w_launch": 2.6,
     # captures
     "v_neutral": 1.0,
     "v_enemy": 2.2,
@@ -65,10 +59,8 @@ PARAMS = {
     "bonus_window": 12,
     "bonus_lead": 0,
     "toward_w": 0.3,
-    "home_r": 5,
+    "home_r": 6,
     "v_home": 1.5,
-    "w_home_fill": 2.4,
-    "home_fill_start": 50,
     "small_min": 3,
     "small_frac": 0.04,
     "gen_move_pen": 0.6,
@@ -84,9 +76,6 @@ PARAMS = {
     "castle_price_w": 1.0,
     "castle_safety_w": 0.5,
     "castle_gather_budget": 30,
-    "castle_home_n": 2,
-    "castle_home_maxd": 3,
-    "castle_home_w": 6.0,
     # army cycle
     "gather_budget": 14,
     "gather_default_budget": 40,
@@ -147,7 +136,6 @@ class Bot:
         self.rings = []                    # (cell, exact_d or None for >=7)
         self.plan = None
         self.cyc = None
-        self.last_label = ""
         self.pending_stack = None
         self.threat_eta = INF
         self.tracks = []
@@ -677,12 +665,9 @@ class Bot:
         return self.mv(best, parent[best]), total
 
     # -------------------------------------------------------------- pathing
-    def path_to(self, src, dst, enemy_cost=1.0, avoid_general=True):
-        """Cheapest path src->dst by Dijkstra (cost: 1 per step + army to beat).
-        Never routes through our own general (a stack merging into it would
-        then march the garrison out)."""
+    def path_to(self, src, dst, enemy_cost=1.0):
+        """Cheapest path src->dst by Dijkstra (cost: 1 per step + army to beat)."""
         A, O = self.A, self.O
-        gen = self.general if (avoid_general and src != self.general) else -1
         n = self.n
         dist = [INF] * n
         prev = [-1] * n
@@ -695,7 +680,7 @@ class Bot:
             if i == dst:
                 break
             for j, _ in self.nb[i]:
-                if not self.pas[j] or j == gen:
+                if not self.pas[j]:
                     continue
                 if O[j] == 1:
                     c = 1
@@ -904,41 +889,29 @@ class Bot:
         options = []  # (score, action)
         cap = self.best_capture(need_g)
         if cap:
-            options.append(cap + ("capture",))
+            options.append(cap)
         if A[g] < need_g:
             eta = self.threat_eta
             budget = None if eta >= INF else max(1, eta - 1)
             a, tot = self.gather_move(g, need=need_g - A[g], budget=budget)
             if a:
                 urgent = eta <= P["track_threat_dist"]
-                options.append((P["w_garrison_urgent"] if urgent else P["w_garrison"], a, "garrison"))
+                options.append((P["w_garrison_urgent"] if urgent else P["w_garrison"], a))
         b = self.castle_build_now()
         if b:
-            options.append(b + ("build",))
-        sc = self.scout_move()
-        if sc:
-            options.append(sc + ("scout",))
-        hf = self.home_fill_move(need_g)
-        if hf:
-            options.append(hf + ("home",))
+            options.append(b)
         self.pending_stack = None
         c = self.cycle_move(need_g)
         if c:
             launching = self.cyc is not None and self.cyc.get("mode") == "launch"
-            options.append((P["w_launch"] if launching else P["w_cycle"], c,
-                            ("launch" if launching else "cyc_" + str(self.cyc.get("purpose") if self.cyc else ""))))
+            options.append((P["w_launch"] if launching else P["w_cycle"], c))
         if not options:
             a, tot = self.gather_move(g, budget=10)
-            self.last_label = "idle_gather" if a else "pass"
             return a or PASS
         options.sort(key=lambda x: -x[0])
         choice = options[0][1]
-        self.last_label = options[0][2]
-        if c is not None and choice is c and self.cyc is not None:
-            if self.cyc.get("mode") == "launch" and self.pending_stack is not None:
-                self.cyc["stack"] = self.pending_stack
-            elif self.cyc.get("mode") == "gather":
-                self.cyc["moves"] = self.cyc.get("moves", 0) + 1
+        if c is not None and choice is c and self.pending_stack is not None and self.cyc is not None:
+            self.cyc["stack"] = self.pending_stack
         return choice
 
     # -------------------------------------------------------------- garrison
@@ -1047,79 +1020,6 @@ class Bot:
             return None
         return (bs, best)
 
-    # ------------------------------------------------------------- home zone
-    def home_fill_move(self, need_g):
-        """Own every cell within home_r of the general: vision = warning time."""
-        t = self.turn
-        P = PARAMS
-        if t < P["home_fill_start"]:
-            return None
-        A, O = self.A, self.O
-        g = self.general
-        R = P["home_r"]
-        dg = self.dist_g
-        holes = [j for j in range(self.n) if self.pas[j] and O[j] != 1 and dg[j] <= R
-                 and not (self.castle[j] and O[j] == 0)]
-        if not holes:
-            return None
-        best, bk = None, None
-        for j in holes:
-            for i, d in self.nb[j]:
-                if O[i] != 1 or A[i] < 2:
-                    continue
-                if i == g:
-                    send = A[i] // 2
-                    if send <= A[j] or A[i] - send < need_g:
-                        continue
-                    split = 1
-                else:
-                    send = A[i] - 1
-                    if send <= A[j]:
-                        continue
-                    split = 0
-                k = (-dg[j], -A[i] if i != g else -10 ** 6)
-                if bk is None or k > bk:
-                    dd = (d ^ 1)  # direction from i to j is the reverse of j->i
-                    bk, best = k, [0, i // self.W, i % self.W, dd, split]
-        if best is None:
-            # bring a small stack next to the nearest hole
-            return None
-        return (P["w_home_fill"], best)
-
-    # ---------------------------------------------------------------- scouting
-    def scout_move(self):
-        """Walk a modest stack toward the nearest unexplored general candidate."""
-        t = self.turn
-        P = PARAMS
-        if self.egen >= 0 or t < P["scout_start"] or not self.cands:
-            return None
-        A, O = self.A, self.O
-        g = self.general
-        cyc = self.cyc
-        busy = set()
-        if cyc:
-            busy = {cyc.get("root"), cyc.get("stack")}
-        lo, hi = P["scout_min"], max(P["scout_min"] + 1, int(P["scout_max_frac"] * self.my_army))
-        srcs = [i for i in range(self.n) if O[i] == 1 and lo <= A[i] <= hi and i != g and i not in busy]
-        if not srcs:
-            return None
-        dc = self.bfs(list(self.cands))
-        i = min(srcs, key=lambda k: (dc[k], -A[k]))
-        if dc[i] >= INF or dc[i] == 0:
-            return None
-        best, bv = None, None
-        for j, d in self.nb[i]:
-            if not self.pas[j] or dc[j] >= dc[i]:
-                continue
-            if O[j] != 1 and A[i] - 1 <= A[j]:
-                continue
-            v = -A[j] if O[j] != 1 else 0
-            if bv is None or v > bv:
-                bv, best = v, j
-        if best is None:
-            return None
-        return (P["w_scout"], self.mv(i, best))
-
     # --------------------------------------------------------------- castles
     def castle_build_now(self):
         t = self.turn
@@ -1177,9 +1077,6 @@ class Bot:
             dg = self.dist_g[i]
             v = -price * P["castle_price_w"] - P["castle_move_w"] * max(0, dg - 7) * 0.5
             v += min(de[i], 12) * P["castle_safety_w"]
-            near_home = sum(1 for c in self.my_castles if self.dist_g[c] <= P["castle_home_maxd"])
-            if near_home < P["castle_home_n"]:
-                v -= P["castle_home_w"] * max(0, dg - P["castle_home_maxd"])
             if bv is None or v > bv:
                 bv, best = v, (i, price)
         return best
@@ -1234,9 +1131,7 @@ class Bot:
                 need = price + P["castle_reserve"] - A[root]
             else:
                 need = None
-            elapsed = cyc.get("moves", 0)
-            if t - cyc["turn"] > 3 * cyc["budget"] + 5:
-                elapsed = cyc["budget"]
+            elapsed = t - cyc["turn"]
             if elapsed < cyc["budget"]:
                 # feed the general's surplus toward the root first
                 surplus = A[g] - need_g
@@ -1258,30 +1153,6 @@ class Bot:
                 # could not gather enough: give up this castle
                 self.cyc = None
                 return None
-            if root == g:
-                # launch half (or all but the garrison) of the general's stack
-                tgt = self.choose_target(g)
-                send_half = A[g] // 2
-                send_all = A[g] - 1
-                if A[g] - 1 - send_all >= need_g - 1 and send_all >= P["min_stack"]:
-                    split, send = 0, send_all
-                elif A[g] - send_half >= need_g and send_half >= P["min_stack"]:
-                    split, send = 1, send_half
-                else:
-                    self.cyc = None
-                    return None
-                path = self.path_to(g, tgt) if tgt >= 0 else None
-                if not path or len(path) < 2:
-                    self.cyc = None
-                    return None
-                nxt = path[1]
-                if O[nxt] != 1 and send <= A[nxt]:
-                    self.cyc = None
-                    return None
-                cyc["mode"] = "launch"
-                cyc["stack"] = g
-                self.pending_stack = nxt
-                return self.mv(g, nxt, split)
             if A[root] >= P["min_stack"]:
                 cyc["mode"] = "launch"
                 cyc["stack"] = root
@@ -1290,7 +1161,7 @@ class Bot:
                 return None
         # launch
         s = cyc["stack"]
-        if O[s] != 1 or A[s] < P["min_stack"] or s == g:
+        if O[s] != 1 or A[s] < P["min_stack"]:
             self.cyc = None
             return None
         tgt = self.choose_target(s)
@@ -1306,9 +1177,7 @@ class Bot:
             return None
         nxt = path[1]
         if O[nxt] != 1 and A[s] - 1 <= A[nxt]:
-            # blocked: re-gather into the stack where it stands
-            self.cyc = {"mode": "gather", "purpose": "attack", "root": s, "turn": t,
-                        "budget": P["regather_budget"], "moves": 0}
+            self.cyc = None
             return None
         self.pending_stack = nxt
         if t - cyc["turn"] > cyc["budget"] + P["launch_max"]:
@@ -1334,11 +1203,11 @@ class Bot:
         self.last_purpose = "attack"
         de = self.bfs([tgt])
         own = [i for i in range(self.n) if O[i] == 1 and i != g]
-        root = g
-        if own and P["attack_root_front"]:
-            root = min(own, key=lambda i: (de[i], -A[i]))
+        if not own:
+            return {"mode": "launch", "purpose": "attack", "root": g, "stack": g, "turn": t, "budget": 0}
+        root = min(own, key=lambda i: (de[i], -A[i]))
         return {"mode": "gather", "purpose": "attack", "root": root, "turn": t,
-                "budget": P["gather_budget"], "target": tgt, "moves": 0}
+                "budget": P["gather_budget"], "target": tgt}
 
     def bfs_path_own(self, src, dst):
         O = self.O
