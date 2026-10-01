@@ -45,7 +45,7 @@ def one(args):
 if __name__ == "__main__":
     a, b, n = sys.argv[1], sys.argv[2], int(sys.argv[3])
     tasks = [(a, b, i // 2, i % 2 == 1) for i in range(n)]
-    with Pool(14) as pool:
+    with Pool(int(sys.argv[4]) if len(sys.argv) > 4 else 14) as pool:
         for r in pool.imap_unordered(one, tasks):
             if r:
                 print(r)
