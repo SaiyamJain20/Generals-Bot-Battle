@@ -130,7 +130,7 @@ class Bot:
     def __init__(self, obs):
         self.H = H = int(obs["height"])
         self.W = W = int(obs["width"])
-        self.pid = int(obs.get("player_id", 0) or 0)
+        self.pid = int(obs.get("player_id", 0))
         self.n = n = H * W
         nb = []
         for i in range(n):
@@ -1559,63 +1559,8 @@ _BOT = None
 _LAST_TURN = None
 
 
-_ALIASES = {
-    "turn": ("turn", "timestep", "time", "t", "tick"),
-    "height": ("height", "H", "h", "rows", "n_rows"),
-    "width": ("width", "W", "w", "cols", "n_cols"),
-    "player_id": ("player_id", "player", "pid", "id", "player_index"),
-    "my_land": ("my_land", "owned_land_count", "land"),
-    "my_army": ("my_army", "owned_army_count"),
-    "opp_land": ("opp_land", "opponent_land_count", "enemy_land"),
-    "opp_army": ("opp_army", "opponent_army_count", "enemy_army"),
-    "type": ("type", "types", "type_grid", "terrain", "tiles", "cell_type"),
-    "owner": ("owner", "owners", "owner_grid", "ownership"),
-    "army": ("army", "armies", "army_grid"),
-}
-
-
-def _get(obs, names):
-    for k in names:
-        if isinstance(obs, dict):
-            if k in obs:
-                return obs[k]
-        elif hasattr(obs, k):
-            return getattr(obs, k)
-    return None
-
-
-def _normalize(obs):
-    """Canonical observation dict regardless of the adapter's exact spelling."""
-    out = {}
-    for key, names in _ALIASES.items():
-        out[key] = _get(obs, names)
-    for g in ("type", "owner", "army"):
-        v = out[g]
-        if v is not None and hasattr(v, "tolist"):
-            out[g] = v.tolist()
-    grid = out["type"]
-    nested = grid is not None and len(grid) > 0 and isinstance(grid[0], (list, tuple))
-    if out["height"] is None and nested:
-        out["height"] = len(grid)
-    if out["width"] is None and nested:
-        out["width"] = len(grid[0])
-    for k in ("turn", "height", "width", "player_id", "my_land", "my_army", "opp_land", "opp_army"):
-        if out[k] is not None:
-            out[k] = int(out[k])
-    if out["my_land"] is None or out["my_army"] is None:
-        own = [v for row in out["owner"] for v in row] if nested else list(out["owner"])
-        arm = [v for row in out["army"] for v in row] if nested else list(out["army"])
-        out["my_land"] = sum(1 for o in own if int(o) == 1)
-        out["my_army"] = sum(int(a) for o, a in zip(own, arm) if int(o) == 1)
-    for k in ("opp_land", "opp_army", "player_id", "turn"):
-        if out[k] is None:
-            out[k] = 0
-    return out
-
-
 def _decide(obs):
     global _BOT, _LAST_TURN
-    obs = _normalize(obs)
     t = int(obs["turn"])
     H, W = int(obs["height"]), int(obs["width"])
     if (_BOT is None or _LAST_TURN is None or t <= _LAST_TURN or t == 0

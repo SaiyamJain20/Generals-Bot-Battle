@@ -26,6 +26,9 @@ if [ ! -x "$S/venv/bin/python" ]; then
   "$S/bin/uv" venv -q -p 3.12 "$S/venv"
   "$S/bin/uv" pip install -q --python "$S/venv/bin/python" cma numpy
 fi
+if ! "$S/venv/bin/python" -c "import torch" 2>/dev/null; then
+  "$S/bin/uv" pip install -q --python "$S/venv/bin/python" torch --index-url https://download.pytorch.org/whl/cpu
+fi
 # fresh copy of the code for this run
 CODE="$S/code-$RUN"
 mkdir -p "$CODE"
@@ -34,7 +37,9 @@ cd "$CODE"
 mkdir -p "$H/results/$RUN"
 ( while true; do sleep 300; cp -f runs/"$RUN"/*.json* "$H/results/$RUN/" 2>/dev/null || true; done ) &
 SYNC=$!
-"$S/venv/bin/python" tune/cma_tune.py --name "$RUN" --bot bots/versions/tune_base.py \
-  --opps "$@" --games 12 --popsize 16 --workers 10 --hours "$HOURS" --map-base "$MAPBASE" || true
+START_ARG=""
+[ -f "runs/start_$RUN.json" ] && START_ARG="--start runs/start_$RUN.json"
+"$S/venv/bin/python" tune/cma_tune.py --name "$RUN" --bot "${TUNE_BOT:-bots/versions/tune_base2.py}" $START_ARG \
+  --sigma 0.15 --opps "$@" --games 12 --popsize 16 --workers 10 --hours "$HOURS" --map-base "$MAPBASE" || true
 cp -f runs/"$RUN"/*.json* "$H/results/$RUN/" 2>/dev/null || true
 kill $SYNC || true
