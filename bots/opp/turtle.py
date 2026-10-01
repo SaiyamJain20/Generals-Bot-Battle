@@ -96,12 +96,7 @@ PARAMS = {
     "kill_margin": 2,
     "intercept_dist": 4,
     "belief_enemy_w": 0.7,
-    "belief_explore_w": 1.0,
-    "belief_prior_w": 3.0,
     "attack_min_army": 60,
-    # time
-    "soft_budget_ms": 45,
-    "first_budget_ms": 3000,
     # endgame
     "fortress_turn": 740,
     "dt_stage_turn": 760,
@@ -109,9 +104,7 @@ PARAMS = {
     "expand_toward_w": 0.15,
 }
 
-# learned spawn prior (logistic regression on generator samples; see learn/train_prior.py)
-PRIOR_W = [-0.2466, 0.1374, 0.0267, 0.6231, 1.4779, 0.2212, -0.1133, 0.0064, -0.049, 13.246]
-PRIOR_B = -5.1142
+PARAMS.update({'castle_start': 60, 'castle_every': 30, 'garrison_frac_hidden': 0.9, 'gather_budget': 25})
 
 DIRS = ((-1, 0), (1, 0), (0, -1), (0, 1))
 PASS = [1, 0, 0, 0, 0]
@@ -156,8 +149,6 @@ class Bot:
         self.rings = []                    # (cell, exact_d or None for >=7)
         self.plan = None
         self.cyc = None
-        self.t_start = time.perf_counter()
-        self.budget_s = PARAMS["soft_budget_ms"] / 1000.0
         self.last_label = ""
         self.pending_stack = None
         self.threat_eta = INF
@@ -170,10 +161,6 @@ class Bot:
         self.cand_dist = {}
 
     # ------------------------------------------------------------------ utils
-    def late(self, frac=1.0):
-        """True once the soft per-move time budget is (frac) used."""
-        return time.perf_counter() > self.t_start + frac * self.budget_s
-
     def manh(self, a, b):
         W = self.W
         return abs(a // W - b // W) + abs(a % W - b % W)
@@ -257,30 +244,6 @@ class Bot:
         self.cands = set(cands)
         for c in cands:
             self.cand_dist[c] = self.bfs([c])
-        self.prior = {}
-        try:
-            feats = {c: self.cand_features(c) for c in cands}
-            for c, f in feats.items():
-                self.prior[c] = sum(w * x for w, x in zip(PRIOR_W, f)) + PRIOR_B
-        except Exception:
-            self.prior = {c: 0.0 for c in cands}
-
-    def cand_features(self, c):
-        """Static features of a spawn candidate (relative to our general)."""
-        H, W = self.H, self.W
-        g = self.general
-        dc = self.cand_dist[c]
-        reach = [v for v in dc if v < INF]
-        span = max(reach)
-        ecc_g = max(v for v in self.dist_g if v < INF)
-        r, col = divmod(c, W)
-        edge = min(r, H - 1 - r, col, W - 1 - col)
-        nb_open = sum(1 for j, _ in self.nb[c] if self.pas[j])
-        gap = abs(self.room[c] - self.room[g])
-        ncand = len(self.cands0)
-        return [self.dist_g[c] / 30.0, self.manh(c, g) / 30.0, gap / 5.0, self.room[c] / 100.0,
-                span / 40.0, (span - ecc_g) / 10.0, edge / 5.0, nb_open / 4.0,
-                (self.room[c] - self.room[g]) / 5.0, 1.0 / max(1, ncand)]
 
     # ------------------------------------------------------------ bookkeeping
     def update(self, obs, T, O, A):
@@ -505,11 +468,13 @@ class Bot:
         return cost
 
     # ------------------------------------------------------------ belief API
-    def belief_scores(self, frm=None):
-        """Lower is better: exploration cost plus distance to recent enemy land."""
+    def belief_target(self, frm=None):
+        """Most likely / cheapest-to-check enemy general cell."""
+        if self.egen >= 0:
+            return self.egen
         cands = self.cands or set(self.cands0)
         if not cands:
-            return {}
+            return -1
         t = self.turn
         if frm is None:
             frm = [i for i in range(self.n) if self.O[i] == 1]
@@ -519,24 +484,16 @@ class Bot:
         recent = [i for i in range(self.n) if self.last_owner[i] == 2 and self.last_seen[i] >= t - 80]
         de = self.bfs(recent) if recent else None
         P = PARAMS
-        out = {}
-        pr = self.prior
+        best, bs = -1, None
         for c in cands:
-            sc = P["belief_explore_w"] * min(dfrm[c], 60)
+            sc = dfrm[c]
             if de is not None:
                 sc += P["belief_enemy_w"] * min(de[c], 40)
-            sc -= P["belief_prior_w"] * pr.get(c, 0.0)
-            out[c] = sc
-        return out
-
-    def belief_target(self, frm=None):
-        """Most likely / cheapest-to-check enemy general cell."""
-        if self.egen >= 0:
-            return self.egen
-        sc = self.belief_scores(frm)
-        if not sc:
-            return -1
-        return min(sc, key=sc.get)
+            for cell, ring in self.rings:
+                pass
+            if bs is None or sc < bs:
+                bs, best = sc, c
+        return best
 
     # ---------------------------------------------------------- local resolve
     def resolve(self, mine_act, en_act):
@@ -674,8 +631,6 @@ class Bot:
         used = 0
         rest = order[1:]
         while used < budget and (need is None or total < need):
-            if self.late(0.8):
-                break
             gain, cost = {root: 0}, {root: 0}
             best, br, bc = -1, 0.0, 0
             room = budget - used
@@ -962,14 +917,14 @@ class Bot:
         b = self.castle_build_now()
         if b:
             options.append(b + ("build",))
-        sc = self.scout_move() if not self.late(0.5) else None
+        sc = self.scout_move()
         if sc:
             options.append(sc + ("scout",))
-        hf = self.home_fill_move(need_g) if not self.late(0.5) else None
+        hf = self.home_fill_move(need_g)
         if hf:
             options.append(hf + ("home",))
         self.pending_stack = None
-        c = self.cycle_move(need_g) if not self.late(0.6) else None
+        c = self.cycle_move(need_g)
         if c:
             launching = self.cyc is not None and self.cyc.get("mode") == "launch"
             options.append((P["w_launch"] if launching else P["w_cycle"], c,
@@ -1419,9 +1374,7 @@ class Bot:
         if not stacks:
             return None
         best = None
-        for i in sorted(stacks, key=lambda k: -A[k])[:4]:
-            if self.late(0.5):
-                break
+        for i in sorted(stacks, key=lambda k: -A[k])[:6]:
             if i == self.general and A[i] < 3 * max(2, getattr(self, "need_g", 2)):
                 continue
             path = self.path_to(i, eg)
@@ -1488,8 +1441,6 @@ def _decide(obs):
         _BOT = Bot(obs)
     _LAST_TURN = t
     b = _BOT
-    b.t_start = time.perf_counter()
-    b.budget_s = (PARAMS["first_budget_ms"] if t == 0 else PARAMS["soft_budget_ms"]) / 1000.0
     T, O, A = b.parse(obs)
     b.turn = t
     if b.general < 0:

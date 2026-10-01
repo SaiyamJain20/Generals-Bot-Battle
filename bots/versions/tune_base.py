@@ -96,8 +96,6 @@ PARAMS = {
     "kill_margin": 2,
     "intercept_dist": 4,
     "belief_enemy_w": 0.7,
-    "belief_explore_w": 1.0,
-    "belief_prior_w": 3.0,
     "attack_min_army": 60,
     # time
     "soft_budget_ms": 45,
@@ -108,10 +106,6 @@ PARAMS = {
     "aggro_turn": 1000,
     "expand_toward_w": 0.15,
 }
-
-# learned spawn prior (logistic regression on generator samples; see learn/train_prior.py)
-PRIOR_W = [-0.2466, 0.1374, 0.0267, 0.6231, 1.4779, 0.2212, -0.1133, 0.0064, -0.049, 13.246]
-PRIOR_B = -5.1142
 
 DIRS = ((-1, 0), (1, 0), (0, -1), (0, 1))
 PASS = [1, 0, 0, 0, 0]
@@ -257,30 +251,6 @@ class Bot:
         self.cands = set(cands)
         for c in cands:
             self.cand_dist[c] = self.bfs([c])
-        self.prior = {}
-        try:
-            feats = {c: self.cand_features(c) for c in cands}
-            for c, f in feats.items():
-                self.prior[c] = sum(w * x for w, x in zip(PRIOR_W, f)) + PRIOR_B
-        except Exception:
-            self.prior = {c: 0.0 for c in cands}
-
-    def cand_features(self, c):
-        """Static features of a spawn candidate (relative to our general)."""
-        H, W = self.H, self.W
-        g = self.general
-        dc = self.cand_dist[c]
-        reach = [v for v in dc if v < INF]
-        span = max(reach)
-        ecc_g = max(v for v in self.dist_g if v < INF)
-        r, col = divmod(c, W)
-        edge = min(r, H - 1 - r, col, W - 1 - col)
-        nb_open = sum(1 for j, _ in self.nb[c] if self.pas[j])
-        gap = abs(self.room[c] - self.room[g])
-        ncand = len(self.cands0)
-        return [self.dist_g[c] / 30.0, self.manh(c, g) / 30.0, gap / 5.0, self.room[c] / 100.0,
-                span / 40.0, (span - ecc_g) / 10.0, edge / 5.0, nb_open / 4.0,
-                (self.room[c] - self.room[g]) / 5.0, 1.0 / max(1, ncand)]
 
     # ------------------------------------------------------------ bookkeeping
     def update(self, obs, T, O, A):
@@ -505,11 +475,13 @@ class Bot:
         return cost
 
     # ------------------------------------------------------------ belief API
-    def belief_scores(self, frm=None):
-        """Lower is better: exploration cost plus distance to recent enemy land."""
+    def belief_target(self, frm=None):
+        """Most likely / cheapest-to-check enemy general cell."""
+        if self.egen >= 0:
+            return self.egen
         cands = self.cands or set(self.cands0)
         if not cands:
-            return {}
+            return -1
         t = self.turn
         if frm is None:
             frm = [i for i in range(self.n) if self.O[i] == 1]
@@ -519,24 +491,16 @@ class Bot:
         recent = [i for i in range(self.n) if self.last_owner[i] == 2 and self.last_seen[i] >= t - 80]
         de = self.bfs(recent) if recent else None
         P = PARAMS
-        out = {}
-        pr = self.prior
+        best, bs = -1, None
         for c in cands:
-            sc = P["belief_explore_w"] * min(dfrm[c], 60)
+            sc = dfrm[c]
             if de is not None:
                 sc += P["belief_enemy_w"] * min(de[c], 40)
-            sc -= P["belief_prior_w"] * pr.get(c, 0.0)
-            out[c] = sc
-        return out
-
-    def belief_target(self, frm=None):
-        """Most likely / cheapest-to-check enemy general cell."""
-        if self.egen >= 0:
-            return self.egen
-        sc = self.belief_scores(frm)
-        if not sc:
-            return -1
-        return min(sc, key=sc.get)
+            for cell, ring in self.rings:
+                pass
+            if bs is None or sc < bs:
+                bs, best = sc, c
+        return best
 
     # ---------------------------------------------------------- local resolve
     def resolve(self, mine_act, en_act):
