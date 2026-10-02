@@ -85,8 +85,7 @@ SPACE = {
     "castle_g": (0, 1, "int"),
     "castle_g_walk": (3, 10, "int"),
     "castle_g_walk_w": (0.0, 3.0, "float"),
-    "castle_stack_price": (35, 45, "int"),
-    "attack_ratio": (0.0, 1.5, "float"),
+    "castle_stack_price": (0, 45, "int"),
     "lead_w": (0.0, 1.5, "float"),
     "fog_tracks": (0, 1, "int"),
 }

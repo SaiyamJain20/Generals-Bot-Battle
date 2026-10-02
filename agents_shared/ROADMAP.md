@@ -60,3 +60,5 @@ and a frozen early version (v1).
 | EklipZ fog queue (offline check) | worse than 0.3×hidden bound | off |
 | early castles (local, 30 games) | 0.567 → 0.583 (n.s.) | left to the tuner |
 | candidate params (7 opponents) | c_base 0.772, c_base_es 0.811, **c_a2best_es 0.829 (bc 0.79)** | ada2 params + es is the best so far |
+| attack-only-when-ahead gate (ratio 1.0 / 1.2) | 0.561 → 0.416 / 0.086 vs strong pool | **rejected** (launches are what win) |
+| castle-from-general / stack castles (castle_g, stack price) | 0.626 → 0.561; with early castles 0.26–0.44 | **rejected** (defaults off); castles stay late (tuned) |
