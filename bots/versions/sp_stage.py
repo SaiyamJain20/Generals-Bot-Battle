@@ -139,6 +139,10 @@ PARAMS = {
     "kill_margin": 2,
     "x_sweep": 1,               # kill check collects own army along the path (Sentinel V8 collection)
     "sweep_cands": 10,
+    "x_stage": 1,               # hold + regather a strike near the known general until it can kill
+    "stage_d": 8,
+    "stage_max": 3,
+    "stage_budget": 10,
     "intercept_dist": 4,
     "belief_enemy_w": 0.7,
     "belief_explore_w": 1.0,
@@ -1840,6 +1844,13 @@ class Bot:
             self.cyc = None
             return None
         nxt = path[1]
+        if (PARAMS["x_stage"] and tgt == self.egen and t < 800 and len(path) - 1 <= PARAMS["stage_d"]
+                and cyc.get("staged", 0) < PARAMS["stage_max"]):
+            # try_kill (run first) says this stack cannot kill yet: wait here and pull army in
+            self.cyc = {"mode": "gather", "purpose": "attack", "root": s, "turn": t,
+                        "budget": PARAMS["stage_budget"], "moves": 0, "staged": cyc.get("staged", 0) + 1}
+            self.last_label = "stage"
+            return None
         if O[nxt] != 1 and A[s] - 1 <= A[nxt]:
             # blocked: re-gather into the stack where it stands
             self.cyc = {"mode": "gather", "purpose": "attack", "root": s, "turn": t,
@@ -1974,6 +1985,8 @@ class Bot:
                     carried -= 1
                 send = carried
                 need = gen_army + PARAMS["kill_margin"] + (len(path) // 2) + 1
+                if PARAMS["x_stage"]:
+                    need += max([A[z] - 1 for z, _ in self.nb[eg] if O[z] == 2] + [0])
             else:
                 cost = sum(A[j] for j in path[1:-1] if O[j] != 1) + len(path)
                 need = gen_army + cost + PARAMS["kill_margin"] + (len(path) // 2)

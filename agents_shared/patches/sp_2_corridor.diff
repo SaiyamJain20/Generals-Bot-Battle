@@ -1,0 +1,141 @@
+--- a/bots/participant.py
++++ b/bots/participant.py
+@@ -195,6 +195,12 @@
+     "min_stack": 6,
+     "feed_min": 6,
+     "kill_margin": 2,
++    "x_corridor": 1,            # Sentinel V5/V6: hold the attacker's path home with an off-path stack
++    "corr_min": 10,
++    "corr_range": 10,
++    "corr_margin": 2,
++    "corr_commit": 10,
++    "corr_frac": 0.5,           # credible if it would reach the general with > corr_frac * garrison
+     "intercept_dist": 4,
+     "belief_enemy_w": 0.7,
+     "belief_explore_w": 1.0,
+@@ -283,6 +289,7 @@
+         self.err = 0
+         self.cands = None
+         self.cand_dist = {}
++        self.corr = None
+ 
+     # ------------------------------------------------------------------ utils
+     def late(self, frac=1.0):
+@@ -1347,6 +1354,10 @@
+             if a:
+                 urgent = eta <= P["track_threat_dist"]
+                 options.append((P["w_garrison_urgent"] if urgent else P["w_garrison"], a, "garrison"))
++        if P["x_corridor"]:
++            cd = self.corridor_defense()
++            if cd:
++                options.append((max(P["w_build"], P["w_garrison_urgent"]) + 0.5, cd, "corridor"))
+         b = self.castle_build_now()
+         if b:
+             options.append(b + ("build",))
+@@ -1387,6 +1398,106 @@
+                 self.cyc["moves"] = self.cyc.get("moves", 0) + 1
+         return choice
+ 
++    # ------------------------------------------------------- corridor defense
++    def corridor_defense(self):
++        """relh Sentinel V5/V6 interception: for the earliest visible attacker whose army beats the
++        cost of its cheapest path home (own army on the path + general + growth), move an off-path
++        stack onto an own path cell that it reaches before the attacker with enough army to stop it.
++        The chosen route is kept for corr_commit turns (Sentinel lesson: never drop a defence
++        because the attacker went into fog)."""
++        P = PARAMS
++        t = self.turn
++        A, O, T = self.A, self.O, self.T
++        g = self.general
++        cm = self.corr
++        if cm is not None:
++            src, dst = cm["src"], cm["dst"]
++            if t > cm["exp"] or O[src] != 1 or A[src] < 2 or O[dst] != 1 or src == dst:
++                self.corr = None
++            else:
++                path = self.bfs_path_own(src, dst)
++                if path and len(path) >= 2 and path[1] != g:
++                    cm["src"] = path[1]
++                    return self.mv(src, path[1])
++                self.corr = None
++        R = P["corr_range"]
++        dg = self.dist_g
++        cands = [e for e in range(self.n) if O[e] == 2 and A[e] >= P["corr_min"] and dg[e] <= R]
++        if not cands:
++            return None
++        # home-cost field: D[j] = army an enemy stack at j loses walking the cheapest path into g
++        n = self.n
++        D = [INF] * n
++        nxt = [-1] * n
++        D[g] = 0
++        h = [(0, g)]
++        while h:
++            d, i = heappop(h)
++            if d > D[i]:
++                continue
++            w = 1 if i == g else 1 + (A[i] if O[i] != 2 else 0)
++            for j, _ in self.nb[i]:
++                if not self.pas[j] or T[j] == 5:
++                    continue
++                nd = d + w
++                if nd < D[j]:
++                    D[j] = nd
++                    nxt[j] = i
++                    heappush(h, (nd, j))
++        thr = None
++        for e in cands:
++            if D[e] >= INF:
++                continue
++            steps = dg[e]
++            surplus = A[e] - D[e] - steps // 2 - P["corr_frac"] * A[g]
++            if surplus > 0:
++                k = (steps, -A[e])
++                if thr is None or k < thr[0]:
++                    thr = (k, e)
++        if thr is None:
++            return None
++        e = thr[1]
++        corridor = []
++        c = nxt[e]
++        while c >= 0 and c != g and len(corridor) < 40:
++            corridor.append(c)
++            c = nxt[c]
++        if not corridor:
++            return None
++        on_path = set(corridor)
++        donors = [i for i in range(n) if O[i] == 1 and A[i] >= 3 and i != g and i not in on_path]
++        if not donors:
++            return None
++        best, bk = None, None
++        lost = 0
++        own = [o == 1 for o in O]
++        for m, c in enumerate(corridor, 1):
++            att = A[e] - m - lost          # attacker army when it arrives at c
++            lost += A[c] if O[c] == 1 else 0
++            if O[c] != 1 or att <= 0:
++                continue
++            dc = self.bfs([c], passable=own, limit=m - 1)
++            for s_ in donors:
++                ds = dc[s_]
++                if ds >= INF or ds > m - 1 or ds == 0:
++                    continue
++                have = A[s_] - 1 + A[c]
++                if have < att + P["corr_margin"]:
++                    continue
++                k = (100 * ds + 10 * m + 0.01 * (have - att))
++                if bk is None or k < bk:
++                    bk, best = k, (s_, c)
++            if self.late(0.4):
++                break
++        if best is None:
++            return None
++        s_, c = best
++        path = self.bfs_path_own(s_, c)
++        if not path or len(path) < 2 or path[1] == g:
++            return None
++        self.corr = {"src": path[1], "dst": c, "exp": t + P["corr_commit"]}
++        return self.mv(s_, path[1])
++
+     # -------------------------------------------------------------- garrison
+     def threat_features(self):
+         hidden = self.opp_army - self.vis_enemy_army - max(0, self.opp_land - self.vis_enemy_cells - 1)

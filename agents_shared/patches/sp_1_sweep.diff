@@ -1,0 +1,56 @@
+--- a/bots/participant.py
++++ b/bots/participant.py
+@@ -195,6 +195,8 @@
+     "min_stack": 6,
+     "feed_min": 6,
+     "kill_margin": 2,
++    "x_sweep": 1,               # kill check collects own army along the path (Sentinel V8 collection)
++    "sweep_cands": 10,
+     "intercept_dist": 4,
+     "belief_enemy_w": 0.7,
+     "belief_explore_w": 1.0,
+@@ -2018,7 +2020,8 @@
+         if not stacks:
+             return None
+         best = None
+-        for i in sorted(stacks, key=lambda k: -A[k])[:4]:
++        sweep = PARAMS["x_sweep"] and t < 800
++        for i in sorted(stacks, key=lambda k: -A[k])[:(PARAMS["sweep_cands"] if sweep else 4)]:
+             if self.late(0.5):
+                 break
+             is_g = i == self.general
+@@ -2028,14 +2031,30 @@
+             path = self.path_to(i, eg)
+             if not path:
+                 continue
+-            cost = sum(A[j] for j in path[1:-1] if O[j] != 1) + len(path)
+-            need = (gen_army + cost + PARAMS["kill_margin"] + (len(path) // 2)) * self.mod["kill"]
+-            if t >= 800:
+-                need = cost + 2
++            if sweep:
++                # exact walk: own cells on the way join the stack, one army stays behind per step
++                carried = send
++                for j in path[1:-1]:
++                    if O[j] == 1:
++                        carried += A[j]
++                    elif carried <= A[j]:
++                        carried = -INF
++                        break
++                    else:
++                        carried -= A[j]
++                    carried -= 1
++                send = carried
++                need = (gen_army + PARAMS["kill_margin"] + (len(path) // 2) + 1) * self.mod["kill"]
++            else:
++                cost = sum(A[j] for j in path[1:-1] if O[j] != 1) + len(path)
++                need = (gen_army + cost + PARAMS["kill_margin"] + (len(path) // 2)) * self.mod["kill"]
++                if t >= 800:
++                    need = cost + 2
+             if send >= need:
+                 if best is None or len(path) < best[1]:
+                     best = (i, len(path), path, 1 if is_g else 0)
+         if best:
++            self.last_label = "kill"
+             return self.mv(best[2][0], best[2][1], best[3])
+         return None
+ 

@@ -1,0 +1,64 @@
+--- a/bots/participant.py
++++ b/bots/participant.py
+@@ -119,6 +119,10 @@
+     "castle_home_n": 2,
+     "castle_home_maxd": 3,
+     "castle_home_w": 6.0,
++    "x_opbuild": 1,             # Sentinel rule: build on any idle stack >= price+5+local threat
++    "opb_start": 100,
++    "opb_reserve": 5,
++    "opb_min_de": 2,
+     "castle_g": 0,
+     "castle_g_walk": 8,
+     "castle_g_walk_w": 1.5,
+@@ -1673,7 +1677,7 @@
+         A, O, T = self.A, self.O, self.T
+         P = PARAMS
+         if not (P["castle_start"] <= t <= P["castle_stop"]):
+-            return None
++            return self.opportunistic_build() if P["x_opbuild"] else None
+         horizon = P["castle_horizon"]
+         de = self.enemy_dist
+         structs = self.my_structs
+@@ -1698,9 +1702,41 @@
+                 if bv is None or v > bv:
+                     bv, best = v, i
+         if best is None or bv < P["castle_val_min"]:
++            return self.opportunistic_build() if P["x_opbuild"] else None
++        if self.threat_eta <= P["track_threat_dist"] and self.A[self.general] < self.need_g:
++            return None
++        return (P["w_build"], [2, best // self.W, best % self.W, 0, 0])
++
++    def opportunistic_build(self):
++        """relh Sentinel castle rule: cheapest idle own plain stack with army >= price + 5 + the
++        strongest adjacent enemy, >= 2 steps from home, home not threatened, enough game left."""
++        t = self.turn
++        P = PARAMS
++        if t < P["opb_start"]:
+             return None
+         if self.threat_eta <= P["track_threat_dist"] and self.A[self.general] < self.need_g:
+             return None
++        A, O, T = self.A, self.O, self.T
++        de = self.enemy_dist
++        structs = self.my_structs
++        cyc = self.cyc
++        reserved = {cyc.get("root"), cyc.get("stack")} if cyc else set()
++        best, bp = None, None
++        for i in range(self.n):
++            if O[i] != 1 or T[i] != 1 or A[i] < 40 or i in reserved or self.dist_g[i] < 2:
++                continue
++            if de[i] < P["opb_min_de"]:
++                continue
++            price = self.price_for(structs, i)
++            if t + 2 * price + 100 >= 1200:
++                continue
++            lt = max([A[j] - 1 for j, _ in self.nb[i] if O[j] == 2] + [0])
++            if A[i] < price + P["opb_reserve"] + lt:
++                continue
++            if bp is None or price < bp:
++                bp, best = price, i
++        if best is None:
++            return None
+         return (P["w_build"], [2, best // self.W, best % self.W, 0, 0])
+ 
+     def n_castles_wanted(self):

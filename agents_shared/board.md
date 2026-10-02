@@ -28,3 +28,6 @@
 16:48 | strategy-port | started: studying Sentinel v10 / bca heuristics, porting top-3 ideas as sp_*.py (notes in agents_shared/strategy-port.md)
 16:49 | rl-research | DONE agents_shared/rl-research.md: Jev not found anywhere (candidates AverageJoe/ResBot/quant-eagle); rec = ES over low-dim context modulator of heuristic weights
 16:50 | auditor | agents_shared/auditor.md done: top risks = (1) THREAT_TREES 141KB replay-trained blob goes LIVE if candidate has learned_threat_w>0 (ada3/5c/6c/local7/7b do) -> remove unless clear gain, else disclose; (2) placeholders only WARN in check_submission; (3) header lacks constants/training disclosure, proposed text in file; checks+build OK
+17:01 | strategy-port | base sp_base 0.758 (sentinel10 .75, t1c .80, sniper .725; 40g/opp off 3000). Finding: kill runs fail because enemy reinforces general while our stack approaches visibly from ~20 cells; testing sp_sweep / sp_stage
+17:09 | strategy-port | sp_sweep 0.783 / sp_stage 0.758 vs base 0.758 (40g/opp, n.s.); testing sp_corridor (Sentinel V5/V6 interception) next
+17:12 | strategy-port | sp_corridor 0.783 vs base 0.758 (n.s., fires rarely vs local pool); smoke-testing sp_opbuild (Sentinel opportunistic castle rule)

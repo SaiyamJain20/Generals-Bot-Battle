@@ -66,8 +66,9 @@ def main():
     if not any(isinstance(n, ast.FunctionDef) and n.name == "act" for n in tree.body):
         print("FAIL no top-level act()")
         ok = False
-    if "TODO" in src or "[PARTICIPANT_ID]" in src:
-        print("WARN placeholders/TODO present (fill participant id + bot name before submitting)")
+    if "[PARTICIPANT_ID]" in src or "[BOT_NAME]" in src:
+        print("FAIL header placeholders [PARTICIPANT_ID]/[BOT_NAME] not filled (use tools/build_submission.py)")
+        ok = False
     # dynamic: import time + a few games vs expander
     t0 = time.perf_counter()
     spec = importlib.util.spec_from_file_location("sub_check", args.path)

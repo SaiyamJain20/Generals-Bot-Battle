@@ -120,6 +120,10 @@ PARAMS = {
     "castle_home_n": 2,
     "castle_home_maxd": 3,
     "castle_home_w": 6.0,
+    "x_opbuild": 1,             # Sentinel rule: build on any idle stack >= price+5+local threat
+    "opb_start": 100,
+    "opb_reserve": 5,
+    "opb_min_de": 2,
     "castle_g": 0,
     "castle_g_walk": 8,
     "castle_g_walk_w": 1.5,
@@ -137,8 +141,6 @@ PARAMS = {
     "min_stack": 6,
     "feed_min": 6,
     "kill_margin": 2,
-    "x_sweep": 1,               # kill check collects own army along the path (Sentinel V8 collection)
-    "sweep_cands": 10,
     "intercept_dist": 4,
     "belief_enemy_w": 0.7,
     "belief_explore_w": 1.0,
@@ -1607,7 +1609,7 @@ class Bot:
         A, O, T = self.A, self.O, self.T
         P = PARAMS
         if not (P["castle_start"] <= t <= P["castle_stop"]):
-            return None
+            return self.opportunistic_build() if P["x_opbuild"] else None
         horizon = P["castle_horizon"]
         de = self.enemy_dist
         structs = self.my_structs
@@ -1632,8 +1634,40 @@ class Bot:
                 if bv is None or v > bv:
                     bv, best = v, i
         if best is None or bv < P["castle_val_min"]:
+            return self.opportunistic_build() if P["x_opbuild"] else None
+        if self.threat_eta <= P["track_threat_dist"] and self.A[self.general] < self.need_g:
+            return None
+        return (P["w_build"], [2, best // self.W, best % self.W, 0, 0])
+
+    def opportunistic_build(self):
+        """relh Sentinel castle rule: cheapest idle own plain stack with army >= price + 5 + the
+        strongest adjacent enemy, >= 2 steps from home, home not threatened, enough game left."""
+        t = self.turn
+        P = PARAMS
+        if t < P["opb_start"]:
             return None
         if self.threat_eta <= P["track_threat_dist"] and self.A[self.general] < self.need_g:
+            return None
+        A, O, T = self.A, self.O, self.T
+        de = self.enemy_dist
+        structs = self.my_structs
+        cyc = self.cyc
+        reserved = {cyc.get("root"), cyc.get("stack")} if cyc else set()
+        best, bp = None, None
+        for i in range(self.n):
+            if O[i] != 1 or T[i] != 1 or A[i] < 40 or i in reserved or self.dist_g[i] < 2:
+                continue
+            if de[i] < P["opb_min_de"]:
+                continue
+            price = self.price_for(structs, i)
+            if t + 2 * price + 100 >= 1200:
+                continue
+            lt = max([A[j] - 1 for j, _ in self.nb[i] if O[j] == 2] + [0])
+            if A[i] < price + P["opb_reserve"] + lt:
+                continue
+            if bp is None or price < bp:
+                bp, best = price, i
+        if best is None:
             return None
         return (P["w_build"], [2, best // self.W, best % self.W, 0, 0])
 
@@ -1949,8 +1983,7 @@ class Bot:
         if not stacks:
             return None
         best = None
-        sweep = PARAMS["x_sweep"] and t < 800
-        for i in sorted(stacks, key=lambda k: -A[k])[:(PARAMS["sweep_cands"] if sweep else 4)]:
+        for i in sorted(stacks, key=lambda k: -A[k])[:4]:
             if self.late(0.5):
                 break
             is_g = i == self.general
@@ -1960,30 +1993,14 @@ class Bot:
             path = self.path_to(i, eg)
             if not path:
                 continue
-            if sweep:
-                # exact walk: own cells on the way join the stack, one army stays behind per step
-                carried = send
-                for j in path[1:-1]:
-                    if O[j] == 1:
-                        carried += A[j]
-                    elif carried <= A[j]:
-                        carried = -INF
-                        break
-                    else:
-                        carried -= A[j]
-                    carried -= 1
-                send = carried
-                need = gen_army + PARAMS["kill_margin"] + (len(path) // 2) + 1
-            else:
-                cost = sum(A[j] for j in path[1:-1] if O[j] != 1) + len(path)
-                need = gen_army + cost + PARAMS["kill_margin"] + (len(path) // 2)
-                if t >= 800:
-                    need = cost + 2
+            cost = sum(A[j] for j in path[1:-1] if O[j] != 1) + len(path)
+            need = gen_army + cost + PARAMS["kill_margin"] + (len(path) // 2)
+            if t >= 800:
+                need = cost + 2
             if send >= need:
                 if best is None or len(path) < best[1]:
                     best = (i, len(path), path, 1 if is_g else 0)
         if best:
-            self.last_label = "kill"
             return self.mv(best[2][0], best[2][1], best[3])
         return None
 
