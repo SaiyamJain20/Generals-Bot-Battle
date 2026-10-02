@@ -217,12 +217,6 @@ PARAMS = {
     "min_stack": 6,
     "feed_min": 6,
     "kill_margin": 2,
-    "x_sweep": 0,               # kill check collects own army along the path (Sentinel V8 collection)
-    "sweep_cands": 10,
-    "x_stage": 0,               # hold + regather a strike near the known general until it can kill
-    "stage_d": 8,
-    "stage_max": 3,
-    "stage_budget": 10,
     "intercept_dist": 4,
     "belief_enemy_w": 0.7,
     "belief_explore_w": 1.0,
@@ -244,6 +238,8 @@ P_SNIPE_REMAINDER = 6  # typical army left on a freshly built enemy castle
 PRIOR_W = [-0.2466, 0.1374, 0.0267, 0.6231, 1.4779, 0.2212, -0.1133, 0.0064, -0.049, 13.246]
 PRIOR_B = -5.1142
 
+
+PARAMS.update({'open_div': 2, 'open_end': 50, 'open_plan_s': 1.5, 'garrison_min': 2, 'garrison_frac_hidden': 0.4328, 'garrison_cap_frac': 0.6529, 'threat_margin': 2, 'threat_vis_range': 8, 'threat_decay': 0.9542, 'w_garrison': 4.3648, 'w_garrison_urgent': 9.0, 'hidden_stack_frac': 0.4606, 'track_min': 8, 'track_frac': 0.12, 'track_ttl': 30, 'track_threat_dist': 5, 'w_build': 9.8385, 'w_cycle': 2.4314, 'w_launch': 4.7703, 'w_scout': 1.0867, 'attack_root_front': 0, 'scout_start': 60, 'scout_min': 3, 'scout_max_frac': 0.3596, 'regather_budget': 8, 'v_neutral': 0.3017, 'v_enemy': 2.4779, 'v_kill': 0.1549, 'v_ecastle': 8.0, 'v_near_home': 2.1846, 'bonus_mult': 1.9644, 'bonus_window': 10, 'bonus_lead': 0, 'toward_w': 0.3, 'home_r': 6, 'v_home': 1.5, 'w_home_fill': 3.0349, 'home_fill_start': 50, 'small_min': 3, 'small_frac': 0.1288, 'gen_move_pen': 0.6, 'castle_start': 244, 'castle_stop': 434, 'castle_every': 49, 'castle_horizon': 900, 'castle_reserve': 1, 'castle_safe_dist': 5, 'castle_val_min': 10.0, 'castle_move_w': 1.0, 'castle_price_w': 0.9628, 'castle_safety_w': 0.0266, 'castle_gather_budget': 9, 'castle_home_n': 2, 'castle_home_maxd': 3, 'castle_home_w': 6.0, 'gather_budget': 21, 'gather_default_budget': 40, 'launch_max': 69, 'min_stack': 4, 'feed_min': 4, 'kill_margin': 2, 'intercept_dist': 1, 'belief_enemy_w': 0.8921, 'belief_explore_w': 1.0, 'belief_prior_w': 3.0, 'attack_min_army': 50, 'soft_budget_ms': 45, 'first_budget_ms': 3000, 'fortress_turn': 696, 'dt_stage_turn': 760, 'aggro_turn': 1000, 'expand_toward_w': 0.15})
 
 DIRS = ((-1, 0), (1, 0), (0, -1), (0, 1))
 PASS = [1, 0, 0, 0, 0]
@@ -1975,13 +1971,6 @@ class Bot:
             self.cyc = None
             return None
         nxt = path[1]
-        if (PARAMS["x_stage"] and tgt == self.egen and t < 800 and len(path) - 1 <= PARAMS["stage_d"]
-                and cyc.get("staged", 0) < PARAMS["stage_max"]):
-            # try_kill (run first) says this stack cannot kill yet: wait here and pull army in
-            self.cyc = {"mode": "gather", "purpose": "attack", "root": s, "turn": t,
-                        "budget": PARAMS["stage_budget"], "moves": 0, "staged": cyc.get("staged", 0) + 1}
-            self.last_label = "stage"
-            return None
         if O[nxt] != 1 and A[s] - 1 <= A[nxt]:
             # blocked: re-gather into the stack where it stands
             self.cyc = {"mode": "gather", "purpose": "attack", "root": s, "turn": t,
@@ -2094,8 +2083,7 @@ class Bot:
         if not stacks:
             return None
         best = None
-        sweep = PARAMS["x_sweep"] and t < 800
-        for i in sorted(stacks, key=lambda k: -A[k])[:(PARAMS["sweep_cands"] if sweep else 4)]:
+        for i in sorted(stacks, key=lambda k: -A[k])[:4]:
             if self.late(0.5):
                 break
             is_g = i == self.general
@@ -2110,34 +2098,14 @@ class Bot:
                 p2 = self.path_to(i, eg, stealth=True)
                 if p2 and len(p2) <= len(path) + PARAMS["kill_stealth_extra"]:
                     path = p2
-            if sweep:
-                # exact walk: own cells on the way join the stack, one army stays behind per step
-                carried = send
-                for j in path[1:-1]:
-                    if O[j] == 1:
-                        carried += A[j]
-                    elif carried <= A[j]:
-                        carried = -INF
-                        break
-                    else:
-                        carried -= A[j]
-                    carried -= 1
-                send = carried
-                need = (gen_army + PARAMS["kill_margin"] + (len(path) // 2) + 1) * self.mod["kill"]
-                if PARAMS["x_stage"]:
-                    need += max([A[z] - 1 for z, _ in self.nb[eg] if O[z] == 2] + [0])
-                if t >= 800:
-                    need = 1
-            else:
-                cost = sum(A[j] for j in path[1:-1] if O[j] != 1) + len(path)
-                need = (gen_army + cost + PARAMS["kill_margin"] + (len(path) // 2)) * self.mod["kill"]
-                if t >= 800:
-                    need = cost + 2
+            cost = sum(A[j] for j in path[1:-1] if O[j] != 1) + len(path)
+            need = (gen_army + cost + PARAMS["kill_margin"] + (len(path) // 2)) * self.mod["kill"]
+            if t >= 800:
+                need = cost + 2
             if send >= need:
                 if best is None or len(path) < best[1]:
                     best = (i, len(path), path, 1 if is_g else 0)
         if best:
-            self.last_label = "kill"
             return self.mv(best[2][0], best[2][1], best[3])
         return None
 
