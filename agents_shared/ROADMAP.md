@@ -42,3 +42,21 @@ algo-study.md, replay-analyst.md, strategy-research.md, vast-research.md.
 ## Holdout set (never tune on)
 nanomena-BC and Kubic-BC (when trained), ResBot-BC at temperature 0, ext_superbot, ext_sentinel, zoo_mixed,
 and a frozen early version (v1).
+
+## Experiment log (Ada, 120 games per opponent unless noted; pooled score ± 95% CI)
+| Change | Result | Decision |
+|---|---|---|
+| early expansion to T100 (`early_expand_until=100, bonus=6`) | 0.738 → 0.766; t1c 0.57 → 0.68 | **adopted** |
+| ring defence (`ring_w=0.7, r=2`) | 0.738 → 0.738 | not adopted (tunable) |
+| castle enemy-facing pref (`castle_front_w=1`) | 0.738 → 0.742 | not adopted (tunable) |
+| stealth routing 0.5 / 1.5 / 3.0 | 0.782 / 0.726 / 0.716 (base 0.738) | **adopted 0.5** |
+| lead-conditioned aggression 0.5 / 1.0 | 0.723 / 0.703 | rejected |
+| chase-kill interceptor (algo-study 2.1) | 0.738 → 0.753 | **adopted** |
+| general-drain veto | identical (never triggers) | dropped |
+| capture-rate leaks | 0.741 (t1c +16, bc −8) | tunable flags (default off) |
+| castle gating | 0.718 | rejected |
+| belief land bound | identical | dropped |
+| learned threat GBM (local) | no gain | off, tunable |
+| EklipZ fog queue (offline check) | worse than 0.3×hidden bound | off |
+| early castles (local, 30 games) | 0.567 → 0.583 (n.s.) | left to the tuner |
+| candidate params (7 opponents) | c_base 0.772, c_base_es 0.811, **c_a2best_es 0.829 (bc 0.79)** | ada2 params + es is the best so far |
