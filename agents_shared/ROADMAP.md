@@ -90,3 +90,15 @@ comparisons inside one eval are still paired. Decision evals used fresh maps 0�
 | bug hunt: even-army losses vs t1c/hvn/sentinel/boss | (1) launch stack kept marching away while a 91 stack closed in (garrison non-urgent until eta 5) → x_def_escalate; (2) two enemy stacks merged next to the general (need = max over single threats) — position already lost, no fix | |
 | x_def_escalate (urgent garrison if deficit ≥ 25% of need and eta ≤ 20) | Ada 540 paired: 0.683 → 0.699 (de3 0.696, de2 0.686); public bots 120 g: 0.892 → 0.879 | neutral; candidate in final selection |
 | slot asymmetry vs clones (80 games each) | resbot96 P0 0.50 / P1 0.35; kubic P0 0.50 / P1 0.375; t1c P0 0.675 / P1 0.70 | clone-side asymmetry (not our bot: symmetric vs t1c) |
+
+## Final selection (fresh maps 1700–1749, never used for decisions; 100 games × 10 opponents)
+| bot | pooled | resbot96 | resbot128 | nanomena | kubic | t1c | sniper | flash | mixed | rusher | hunter |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| c_a2es3 (morning best) | 0.665 | .36 | .32 | .48 | .41 | .72 | .78 | .92 | .87 | .80 | .99 |
+| F0 = base (sweep + dt_guard) | 0.7125 | .45 | .39 | .57 | .445 | .69 | .89 | .94 | .925 | .84 | .985 |
+| F1 = F0 + escalation | 0.7075 | .41 | .37 | .52 | .445 | .71 | .93 | .945 | .93 | .83 | .985 |
+| **F2 = F0 + es4 modulator** | **0.752** | **.555** | **.58** | **.66** | **.66** | .57 | .92 | .90 | .94 | .775 | .96 |
+| F3 = F2 + escalation | 0.746 | .565 | .57 | .64 | .64 | .55 | .92 | .90 | .94 | .775 | .96 |
+
+Public bots (laptop, 40 games each, maps 10000+): F0 0.816 (sentinel10 .825, hvn .675, juraj35 .887, superbot .925, boss .95, sentinel .825, bca .625);
+F2 0.821 (.85, .775, .875, 1.0, .85, .95, **bca .45**).
