@@ -79,3 +79,9 @@ and a frozen early version (v1).
 | es3 → es4 | es3 (base10) superseded after 3 gens; es4 = ES over m_* + sweep_cands on tune_base12, warm start from es3 mean_avg | running (5 h) |
 | deathtouch guard (dt_guard: chase / kill / reinforce the threatened neighbour from T790) | fixes the T865 loss vs hvn (we were ahead 1253 vs 895); unit tests: block fails without it | **adopted** (x_dt_guard=1) |
 | win rate vs ResBot-BC by general BFS distance (120 games) | 16–23: 0.35–0.39; 24–35: 0.17–0.29 (small n) | noted; no restart of es4 |
+| **before/after** (fresh maps offset 6000, 100 games × 10 opponents) | c_a2es3 0.678 → **tune_base12g 0.712** (bc_resbot128 .37→.42, nanomena .475→.515, rusher .78→.88, kubic .47→.45) | current base adopted |
+
+Note: fresh-map indices wrap modulo 2000 (arena/run.py), so offsets 4000/6000 reused maps 0–49 (same as fresh1);
+comparisons inside one eval are still paired. Decision evals used fresh maps 0–49, 400–449, 500–549, 1000–1049,
+1500–1549. **Final selection uses offset 1700 (maps 1700–1749), untouched by any decision.**
+| before/after vs public bots (laptop, 40 games each) | c_a2es3 0.743 → tune_base12g 0.779 (sentinel10 .75→.90, hvn .65→.75, bca .525 both) | confirms |

@@ -63,7 +63,7 @@ SPACE = {
     "feed_min": (2, 20, "int"),
     "v_near_home": (0.0, 5.0, "float"),
     "fortress_turn": (650, 790, "int"),
-    "early_expand_until": (0, 130, "int"),
+    "early_expand_until": (0, 300, "int"),
     "early_expand_bonus": (0.0, 10.0, "float"),
     "ring_w": (0.0, 1.0, "float"),
     "ring_r": (1, 3, "int"),
