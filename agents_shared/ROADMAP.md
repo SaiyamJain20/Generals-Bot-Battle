@@ -77,3 +77,5 @@ and a frozen early version (v1).
 | x_spread (post-bonus small-stack neutral spreading) | clones+: 0.555 → 0.458; hvn 60 games 0.667 → 0.583 | **rejected** |
 | **x_sweep** (exact path walk in the kill check, 10 candidate stacks) on current base | 0.580 → **0.620**; + x_stage 0.585 | **adopted** (default on, tune_base12) |
 | es3 → es4 | es3 (base10) superseded after 3 gens; es4 = ES over m_* + sweep_cands on tune_base12, warm start from es3 mean_avg | running (5 h) |
+| deathtouch guard (dt_guard: chase / kill / reinforce the threatened neighbour from T790) | fixes the T865 loss vs hvn (we were ahead 1253 vs 895); unit tests: block fails without it | **adopted** (x_dt_guard=1) |
+| win rate vs ResBot-BC by general BFS distance (120 games) | 16–23: 0.35–0.39; 24–35: 0.17–0.29 (small n) | noted; no restart of es4 |
