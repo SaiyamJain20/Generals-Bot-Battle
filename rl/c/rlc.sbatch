@@ -40,7 +40,7 @@ OUT="rl/c/runs/$TAG"
 mkdir -p "$OUT"
 ( while true; do sleep 300; cp -f "$OUT"/*.jsonl "$OUT"/*.json "$H/rlc/results/$TAG/" 2>/dev/null || true; done ) &
 SYNC=$!
-PYTHONPATH="$W" "$V/bin/python" rl/c/grpo.py --out "$OUT" "$@" || true
+PYTHONPATH="$W" "$V/bin/python" "rl/c/${SCRIPT:-grpo.py}" --out "$OUT" "$@" || true
 cp -f "$OUT"/*.jsonl "$OUT"/*.json "$H/rlc/results/$TAG/" 2>/dev/null || true
 kill $SYNC || true
 echo done
