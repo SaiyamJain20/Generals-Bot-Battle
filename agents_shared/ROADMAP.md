@@ -87,3 +87,5 @@ comparisons inside one eval are still paired. Decision evals used fresh maps 0�
 | before/after vs public bots (laptop, 40 games each) | c_a2es3 0.743 → tune_base12g 0.779 (sentinel10 .75→.90, hvn .65→.75, bca .525 both) | confirms |
 | kill_margin 0 / 5 / 9 under x_sweep (vs tuned 2) | 0.551 / 0.528 / 0.536 vs ≈0.566 | keep 2 |
 | early_expand_until 130 / 160 (bonus 7) | 0.645 → 0.615 / 0.557; vs hvn+bca 0.74 → 0.66 (160) | **rejected** |
+| bug hunt: even-army losses vs t1c/hvn/sentinel/boss | (1) launch stack kept marching away while a 91 stack closed in (garrison non-urgent until eta 5) → x_def_escalate; (2) two enemy stacks merged next to the general (need = max over single threats) — position already lost, no fix | |
+| x_def_escalate (urgent garrison if deficit ≥ 25% of need and eta ≤ 20) | Ada 540 paired: 0.683 → 0.699 (de3 0.696, de2 0.686); public bots 120 g: 0.892 → 0.879 | neutral; candidate in final selection |
