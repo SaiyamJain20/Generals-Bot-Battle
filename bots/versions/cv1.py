@@ -20,31 +20,19 @@ Strategy (stdlib-only heuristic, every rule simulated exactly):
     - An adjacent stack chase-kills an attacker.
     - An exact one-turn resolver (chasing > reinforcing > smaller army) vetoes moves that lose the general.
   * Castle economy, enemy-castle sniping, and a deathtouch fortress/strike after turn 800.
-  * A context modulator (56 weights, a linear map of 8 game-state features into 7 option multipliers)
-    adapts the option weights to the opponent and the game phase at run time.
-  * No network, no files, no threads, no subprocesses, no external randomness.
-    Only the observation dict is read; no AI service is called at game time.
-
-Embedded constants (all inline in this file, produced during the event by the participant's own scripts):
-  * PARAMS (including the m_* modulator weights).
-    - Numeric weights and thresholds tuned by CMA-ES / evolution strategies in self-play on the pinned engine.
-    - Sparring opponents (used locally only): older versions of this bot, hand-written heuristics,
-      public competition bots, and small networks behaviour-cloned from public generals.bot Marathon replays.
-    - None of those bots or networks is included in or loaded by this file.
-  * PRIOR_W / PRIOR_B: a 10-weight logistic spawn prior, trained on maps from the pinned engine's own generator.
+  * All numeric parameters are tuned by CMA-ES self-play.
+    - Opponents include older versions, a heuristic zoo, public competition bots, and
+      behaviour-cloned neural clones of the top Marathon bots.
 
 Sources / attribution:
-  * Rules, move order and map generator re-implemented from strakam/generals-bots@13db8f69 (MIT), the pinned engine.
-  * Ideas only, no code copied:
+  * Rules and move order re-implemented from strakam/generals-bots@13db8f69 (MIT), the pinned engine.
+  * Ideas only, no code:
     - EklipZ generals-bot (gather pruning, back-tracing);
     - relh Sentinel and juraj bots (chase-kill interceptor);
     - Straka & Schmid, arXiv 2507.06825;
-    - statistics from the public generals.bot Marathon replays.
-
-AI assistance: developed with Claude Code (Anthropic, Claude models) as a coding, experiment-running and
-research assistant. Material parts of the code were written by it, including the tuning and training scripts
-that produced the constants above. The participant directed the work, reviewed the submitted code, and can
-explain and reproduce it. Standard library only.
+    - statistics and behaviour clones from the public generals.bot Marathon replays.
+AI assistance: developed with Claude Code (Anthropic) as a coding/research assistant. The strategy code is
+all in this file and was reviewed by the participant. Standard library only.
 """
 import gc
 import math
@@ -68,7 +56,6 @@ PARAMS = {
     "x_big_route": 0,
     "x_bonus_graded": 0,
     "x_no_pass": 0,
-    "x_early_enemy": 0.0,      # >0: enemy-tile captures also get early_expand_bonus (x this) before early_expand_until
     "snipe_range": 12,
     "snipe_margin": 5,
     "stealth_last": 3,
@@ -197,8 +184,6 @@ PARAMS = {
     "m_kill_7": 0.0,
     "attack_ratio": 0.0,
     "castle_front_w": 0.0,
-    "castle_keep": 0,          # 1: castles only give half to gathers/captures, none when a visible enemy is near
-    "castle_guard_r": 4,
     "ring_r": 2,
     "ring_w": 0.0,
     "early_expand_until": 100,
@@ -231,6 +216,10 @@ P_SNIPE_REMAINDER = 6  # typical army left on a freshly built enemy castle
 PRIOR_W = [-0.2466, 0.1374, 0.0267, 0.6231, 1.4779, 0.2212, -0.1133, 0.0064, -0.049, 13.246]
 PRIOR_B = -5.1142
 
+
+PARAMS.update({'open_div': 2, 'open_end': 50, 'open_plan_s': 1.5, 'garrison_min': 2, 'garrison_frac_hidden': 0.4328, 'garrison_cap_frac': 0.6529, 'threat_margin': 2, 'threat_vis_range': 8, 'threat_decay': 0.9542, 'w_garrison': 4.3648, 'w_garrison_urgent': 9.0, 'hidden_stack_frac': 0.4606, 'track_min': 8, 'track_frac': 0.12, 'track_ttl': 30, 'track_threat_dist': 5, 'w_build': 9.8385, 'w_cycle': 2.4314, 'w_launch': 4.7703, 'w_scout': 1.0867, 'attack_root_front': 0, 'scout_start': 60, 'scout_min': 3, 'scout_max_frac': 0.3596, 'regather_budget': 8, 'v_neutral': 0.3017, 'v_enemy': 2.4779, 'v_kill': 0.1549, 'v_ecastle': 8.0, 'v_near_home': 2.1846, 'bonus_mult': 1.9644, 'bonus_window': 10, 'bonus_lead': 0, 'toward_w': 0.3, 'home_r': 6, 'v_home': 1.5, 'w_home_fill': 3.0349, 'home_fill_start': 50, 'small_min': 3, 'small_frac': 0.1288, 'gen_move_pen': 0.6, 'castle_start': 244, 'castle_stop': 434, 'castle_every': 49, 'castle_horizon': 900, 'castle_reserve': 1, 'castle_safe_dist': 5, 'castle_val_min': 10.0, 'castle_move_w': 1.0, 'castle_price_w': 0.9628, 'castle_safety_w': 0.0266, 'castle_gather_budget': 9, 'castle_home_n': 2, 'castle_home_maxd': 3, 'castle_home_w': 6.0, 'gather_budget': 21, 'gather_default_budget': 40, 'launch_max': 69, 'min_stack': 4, 'feed_min': 4, 'kill_margin': 2, 'intercept_dist': 1, 'belief_enemy_w': 0.8921, 'belief_explore_w': 1.0, 'belief_prior_w': 3.0, 'attack_min_army': 50, 'soft_budget_ms': 45, 'first_budget_ms': 3000, 'fortress_turn': 696, 'dt_stage_turn': 760, 'aggro_turn': 1000, 'expand_toward_w': 0.15})
+
+PARAMS.update({'castle_start': 120, 'castle_stop': 600, 'castle_every': 45})
 
 DIRS = ((-1, 0), (1, 0), (0, -1), (0, 1))
 PASS = [1, 0, 0, 0, 0]
@@ -270,7 +259,6 @@ class Bot:
         self.prev = None                   # previous turn scalars and structures
         self.last_action = PASS
         self.enemy_castles = set()
-        self.my_castles = set()
         self.enemy_struct = 1              # enemy general + castles
         self.enemy_builds = []             # (turn, cell, price)
         self.ecastle_built = {}            # enemy castle cell -> build turn (from accounting)
@@ -903,34 +891,16 @@ class Bot:
         return True
 
     # ---------------------------------------------------------------- gather
-    def guarded_castles(self):
-        """Our castles with a visible enemy stack (>= 2) within castle_guard_r: keep them out of gathers."""
-        if getattr(self, "_guard_t", -1) == self.turn:
-            return self._guard
-        out = set()
-        if PARAMS["castle_keep"] and self.my_castles:
-            r = PARAMS["castle_guard_r"]
-            A, O = self.A, self.O
-            foes = [j for j in range(self.n) if O[j] == 2 and A[j] >= 2]
-            for c in self.my_castles:
-                for j in foes:
-                    if self.manh(c, j) <= r:
-                        out.add(c)
-                        break
-        self._guard, self._guard_t = out, self.turn
-        return out
-
     def gather_tree(self, root, allowed=None):
         O, A = self.O, self.A
         parent = {root: -1}
         depth = {root: 0}
         order = [root]
         dq = deque([root])
-        guard = self.guarded_castles()
         while dq:
             i = dq.popleft()
             for j, _ in self.nb[i]:
-                if j not in parent and O[j] == 1 and j not in guard and (allowed is None or allowed(j)):
+                if j not in parent and O[j] == 1 and (allowed is None or allowed(j)):
                     parent[j] = i
                     depth[j] = depth[i] + 1
                     order.append(j)
@@ -948,10 +918,6 @@ class Bot:
         if budget is None:
             budget = PARAMS["gather_default_budget"]
         val = {i: A[i] - 1 for i in order}
-        if PARAMS["castle_keep"]:
-            for c in self.my_castles:
-                if c in val:
-                    val[c] = A[c] // 2
         val[root] = 0
         sel = {root}
         total = 0
@@ -1005,8 +971,6 @@ class Bot:
                 bk, best = k, i
         if best < 0:
             return None, total
-        if PARAMS["castle_keep"] and best in self.my_castles:
-            return self.mv(best, parent[best], 1), total
         return self.mv(best, parent[best]), total
 
     # -------------------------------------------------------------- pathing
@@ -1565,8 +1529,6 @@ class Bot:
         busy = set()
         if self.cyc:
             busy = {self.cyc.get("root"), self.cyc.get("stack")}
-        keep = self.my_castles if P["castle_keep"] else ()
-        guard = self.guarded_castles()
         for i in range(self.n):
             ai = A[i]
             if O[i] != 1 or ai < 2:
@@ -1578,10 +1540,6 @@ class Bot:
                 aj = A[j]
                 split = 0
                 send = ai - 1
-                if i in keep:
-                    if i in guard and O[j] != 2:
-                        continue
-                    split, send = 1, ai // 2
                 if is_g:
                     if ai - 1 - aj >= 1 and ai - (ai - 1) >= need_g:
                         split = 0
@@ -1597,8 +1555,6 @@ class Bot:
                         v += P["v_ecastle"]
                     if self.manh(j, g) <= 3:
                         v += P["v_near_home"]
-                    if P["x_early_enemy"] and t < P["early_expand_until"]:
-                        v += P["early_expand_bonus"] * P["x_early_enemy"]
                 else:
                     if T[j] == 3:
                         continue
@@ -1675,8 +1631,7 @@ class Bot:
         if cyc:
             busy = {cyc.get("root"), cyc.get("stack")}
         lo, hi = P["scout_min"], max(P["scout_min"] + 1, int(P["scout_max_frac"] * self.my_army))
-        srcs = [i for i in range(self.n) if O[i] == 1 and lo <= A[i] <= hi and i != g and i not in busy
-                and not (P["castle_keep"] and i in self.my_castles)]
+        srcs = [i for i in range(self.n) if O[i] == 1 and lo <= A[i] <= hi and i != g and i not in busy]
         if not srcs:
             return None
         dc = self.bfs(list(self.cands))

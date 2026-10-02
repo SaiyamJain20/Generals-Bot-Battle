@@ -64,3 +64,7 @@ and a frozen early version (v1).
 | castle-from-general / stack castles (castle_g, stack price) | 0.626 → 0.561; with early castles 0.26–0.44 | **rejected** (defaults off); castles stay late (tuned) |
 | kill-front gathering when the enemy general is known | 0.425 → 0.356 vs big clones (80 games, local) | **rejected** (default off; tunable) |
 | embedded threat GBM | no gain + audit risk (replay-trained, 141 KB) | **removed from the bot** |
+| fresh-map overfitting check (100 games/opp, maps never used in tuning) | c_a2es3 0.670 fresh vs 0.653 tuning maps; ada5c 0.672 / 0.669; local7b 0.650; t1c 0.649 | **no map overfitting**; tuned candidates ≈ c_a2es3 |
+| es2 (ES over modulator) | started on tune_base9 = default params (incumbent 0.10 vs c_a2es3) | **cancelled**, restarted as es3 on tune_base10 = participant + a2es3 params |
+| diagnosis vs ResBot-BC (24 games) | T100 land 42 vs 53, T300 land 57 vs 92, castles 0 vs 3.5; their attacks on our land T50–200: 22 vs our 13 | economy gap = land war + castles |
+| castle start 120 / 160 vs clones (80 paired games, local) | 0.425 → 0.31 / 0.31 | **rejected**: our castles get drained to 1 and captured (7/8 lost in traces) |
