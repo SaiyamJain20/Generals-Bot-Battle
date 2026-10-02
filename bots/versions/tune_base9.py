@@ -123,7 +123,7 @@ PARAMS = {
     "castle_g_walk": 8,
     "castle_g_walk_w": 1.5,
     "castle_stack_price": 0,
-    "kill_front": 1,
+    "kill_front": 0,
     "kill_gather_budget": 18,
     "mod_on": 1,
     "m_launch_0": 0.0,
