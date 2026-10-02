@@ -236,6 +236,8 @@ PARAMS = {
     "first_budget_ms": 3000,
     # endgame
     "fortress_turn": 740,
+    "x_dt_guard": 1,           # deathtouch-era chase / block defence of the general (dt_guard)
+    "dt_guard_turn": 790,
     "dt_stage_turn": 760,
     "aggro_turn": 1000,
     "expand_toward_w": 0.15,
@@ -1105,6 +1107,10 @@ class Bot:
         a = self.win_now()
         if a:
             return a
+        if PARAMS["x_dt_guard"] and t >= PARAMS["dt_guard_turn"] and g >= 0:
+            a = self.dt_guard()
+            if a:
+                return a
         a = self.urgent_defense(threats)
         if a:
             return a
@@ -2149,6 +2155,73 @@ class Bot:
         return None
 
     # --------------------------------------------------------------- endgame
+    def dt_guard(self):
+        """Deathtouch-era defence of our general (turn >= dt_guard_turn).
+
+        From turn 800 any valid move onto our general wins, so army on the general is useless;
+        what matters is that no enemy stack (>= 2) is adjacent to it when it moves.
+        1. enemy adjacent: chase its cell from a third tile with A[j] >= A[e] (chasing moves go
+           first and leave it <= 1, so its touch is invalid); before 800 the general may hit it too.
+        2. enemy two steps away (next to a neighbour c of the general) that can take c: kill it,
+           or reinforce c so it holds (reinforcing resolves before the attack)."""
+        t = self.turn
+        A, O = self.A, self.O
+        g = self.general
+        nbg = [c for c, _ in self.nb[g] if self.pas[c]]
+        adj = [e for e in nbg if O[e] == 2 and A[e] >= 2]
+        best, bk = None, None
+        for e in adj:
+            for j, _ in self.nb[e]:
+                if O[j] != 1 or A[j] < 2:
+                    continue
+                if j == g:
+                    if t >= 800 or A[g] - 1 <= A[e]:
+                        continue
+                elif A[j] < A[e]:
+                    continue
+                k = (A[e], A[j] - 1 > A[e], j != g, A[j])
+                if bk is None or k > bk:
+                    bk, best = k, (j, e)
+        if best:
+            self.last_label = "dt_chase"
+            return self.mv(*best)
+        threats = []
+        for c in nbg:
+            for e, _ in self.nb[c]:
+                if e == g or O[e] != 2 or A[e] < 2:
+                    continue
+                arrive = A[e] - 1
+                if arrive <= A[c]:
+                    continue
+                threats.append((arrive - A[c], c, e))
+        if not threats:
+            return None
+        threats.sort(reverse=True)
+        for deficit, c, e in threats:
+            # (a) kill the threat outright (from c this is chasing if it moves into c: we go first)
+            for j, _ in self.nb[e]:
+                if O[j] == 1 and j != g and A[j] - 1 > A[e]:
+                    self.last_label = "dt_kill"
+                    return self.mv(j, e)
+            # (b) make c hold: reinforce it from an own neighbour (general last, it is the fallback)
+            if O[c] == 1:
+                srcs = [j for j, _ in self.nb[c] if O[j] == 1 and j != e and j != g and A[j] - 1 >= deficit]
+                if srcs:
+                    j = min(srcs, key=lambda k: A[k])
+                    self.last_label = "dt_block"
+                    return self.mv(j, c)
+                if A[g] - 1 >= deficit:
+                    split = 1 if (t < 800 and A[g] // 2 >= deficit) else 0
+                    self.last_label = "dt_block"
+                    return self.mv(g, c, split)
+            else:
+                # c is not ours: take it with enough to keep it after the enemy walks in
+                send = A[g] - 1
+                if send > A[c] + A[e]:
+                    self.last_label = "dt_block"
+                    return self.mv(g, c, 0)
+        return None
+
     def endgame(self):
         t = self.turn
         A, O = self.A, self.O

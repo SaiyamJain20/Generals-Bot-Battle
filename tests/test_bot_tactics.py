@@ -89,3 +89,28 @@ def test_no_suicidal_general_move():
         t = s.copy()
         E.step(t, [a, ea])
         assert t.winner != 1
+
+
+def test_dt_block_two_steps_away():
+    # turn 850: enemy 40-stack two steps from our general, about to take our 2-army neighbour
+    s = board(time=850)
+    s.army[5 * 18 + 5] = 120
+    for rc in ((4, 5), (6, 5), (5, 4), (5, 6)):
+        give(s, 0, rc, 2)
+    give(s, 1, (5, 7), 40)     # next to our neighbour (5, 6)
+    a = act_for(s)
+    # enemy walks in, then touches next turn
+    E.step(s, [a, [0, 5, 7, LEFT, 0]])
+    assert s.winner != 1 and s.owner[5 * 18 + 6] == 0, (a, s.owner[5 * 18 + 6], s.army[5 * 18 + 6])
+
+
+def test_dt_chase_adjacent_with_equal_army():
+    # turn 900: enemy 10-stack adjacent to the general; our 10-stack on a third tile leaves it with 1
+    s = board(time=900)
+    s.army[5 * 18 + 5] = 50
+    give(s, 1, (5, 6), 10)
+    give(s, 0, (4, 6), 10)
+    a = act_for(s)
+    assert a[:4] == [0, 4, 6, DOWN], a
+    E.step(s, [a, [0, 5, 6, LEFT, 0]])
+    assert s.winner != 1
