@@ -102,3 +102,6 @@ comparisons inside one eval are still paired. Decision evals used fresh maps 0�
 
 Public bots (laptop, 40 games each, maps 10000+): F0 0.816 (sentinel10 .825, hvn .675, juraj35 .887, superbot .925, boss .95, sentinel .825, bca .625);
 F2 0.821 (.85, .775, .875, 1.0, .85, .95, **bca .45**).
+| F2h (es4 modulator × 0.5), maps 1700 | 0.7245 (clones .505/.44/.565/.58, t1c .65, hunter .99) | interpolates; no free lunch |
+| **confirmation slice 1800–1849** | F0 0.692 vs **F2 0.754** (clones .64/.545/.69/.64 vs .46/.34/.46/.54; t1c .57 vs .675; hunter .90 vs .96) | F2 gain replicates; weaker vs t1c/hunter |
+| es4 modulator, what it learned | garrison bias −0.48 (+0.45·army ratio), launch bias +0.51 (+0.26·enemy castles), kill bias −0.24, capture bias −0.35 | mostly global aggression → test F2 minus garrison weights (F2g) |
