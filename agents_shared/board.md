@@ -25,3 +25,6 @@
 06:3x | vast-research | section 0-1 (framing + 25 ranked ideas) written to agents_shared/vast-research.md
 06:4x | vast-research | DONE: agents_shared/vast-research.md (25 ideas, test plans, sources); top: stealth routing, archetype gate matrix, launch-value, CMA mean averaging, SPRT, catastrophe gate
 06:13 | porter | STRONG: ext_bca and ext_sentinel10 both score 0.50 vs t1c (16/20 games); juraj34 0.20, superbot/hvn 0.15
+16:48 | strategy-port | started: studying Sentinel v10 / bca heuristics, porting top-3 ideas as sp_*.py (notes in agents_shared/strategy-port.md)
+16:49 | rl-research | DONE agents_shared/rl-research.md: Jev not found anywhere (candidates AverageJoe/ResBot/quant-eagle); rec = ES over low-dim context modulator of heuristic weights
+16:50 | auditor | agents_shared/auditor.md done: top risks = (1) THREAT_TREES 141KB replay-trained blob goes LIVE if candidate has learned_threat_w>0 (ada3/5c/6c/local7/7b do) -> remove unless clear gain, else disclose; (2) placeholders only WARN in check_submission; (3) header lacks constants/training disclosure, proposed text in file; checks+build OK

@@ -63,7 +63,6 @@ SPACE = {
     "feed_min": (2, 20, "int"),
     "v_near_home": (0.0, 5.0, "float"),
     "fortress_turn": (650, 790, "int"),
-    "learned_threat_w": (0.0, 1.2, "float"),
     "early_expand_until": (0, 130, "int"),
     "early_expand_bonus": (0.0, 10.0, "float"),
     "ring_w": (0.0, 1.0, "float"),
@@ -82,6 +81,64 @@ SPACE = {
     "far_decay_mult": (0.2, 1.2, "float"),
     "min_def_budget": (1, 8, "int"),
     "track_max_adv": (3, 15, "int"),
+    "kill_front": (0, 1, "int"),
+    "kill_gather_budget": (6, 30, "int"),
+    "m_launch_0": (-1.0, 1.0, "float"),
+    "m_launch_1": (-1.0, 1.0, "float"),
+    "m_launch_2": (-1.0, 1.0, "float"),
+    "m_launch_3": (-1.0, 1.0, "float"),
+    "m_launch_4": (-1.0, 1.0, "float"),
+    "m_launch_5": (-1.0, 1.0, "float"),
+    "m_launch_6": (-1.0, 1.0, "float"),
+    "m_launch_7": (-1.0, 1.0, "float"),
+    "m_cycle_0": (-1.0, 1.0, "float"),
+    "m_cycle_1": (-1.0, 1.0, "float"),
+    "m_cycle_2": (-1.0, 1.0, "float"),
+    "m_cycle_3": (-1.0, 1.0, "float"),
+    "m_cycle_4": (-1.0, 1.0, "float"),
+    "m_cycle_5": (-1.0, 1.0, "float"),
+    "m_cycle_6": (-1.0, 1.0, "float"),
+    "m_cycle_7": (-1.0, 1.0, "float"),
+    "m_capture_0": (-1.0, 1.0, "float"),
+    "m_capture_1": (-1.0, 1.0, "float"),
+    "m_capture_2": (-1.0, 1.0, "float"),
+    "m_capture_3": (-1.0, 1.0, "float"),
+    "m_capture_4": (-1.0, 1.0, "float"),
+    "m_capture_5": (-1.0, 1.0, "float"),
+    "m_capture_6": (-1.0, 1.0, "float"),
+    "m_capture_7": (-1.0, 1.0, "float"),
+    "m_garrison_0": (-1.0, 1.0, "float"),
+    "m_garrison_1": (-1.0, 1.0, "float"),
+    "m_garrison_2": (-1.0, 1.0, "float"),
+    "m_garrison_3": (-1.0, 1.0, "float"),
+    "m_garrison_4": (-1.0, 1.0, "float"),
+    "m_garrison_5": (-1.0, 1.0, "float"),
+    "m_garrison_6": (-1.0, 1.0, "float"),
+    "m_garrison_7": (-1.0, 1.0, "float"),
+    "m_scout_0": (-1.0, 1.0, "float"),
+    "m_scout_1": (-1.0, 1.0, "float"),
+    "m_scout_2": (-1.0, 1.0, "float"),
+    "m_scout_3": (-1.0, 1.0, "float"),
+    "m_scout_4": (-1.0, 1.0, "float"),
+    "m_scout_5": (-1.0, 1.0, "float"),
+    "m_scout_6": (-1.0, 1.0, "float"),
+    "m_scout_7": (-1.0, 1.0, "float"),
+    "m_home_0": (-1.0, 1.0, "float"),
+    "m_home_1": (-1.0, 1.0, "float"),
+    "m_home_2": (-1.0, 1.0, "float"),
+    "m_home_3": (-1.0, 1.0, "float"),
+    "m_home_4": (-1.0, 1.0, "float"),
+    "m_home_5": (-1.0, 1.0, "float"),
+    "m_home_6": (-1.0, 1.0, "float"),
+    "m_home_7": (-1.0, 1.0, "float"),
+    "m_kill_0": (-1.0, 1.0, "float"),
+    "m_kill_1": (-1.0, 1.0, "float"),
+    "m_kill_2": (-1.0, 1.0, "float"),
+    "m_kill_3": (-1.0, 1.0, "float"),
+    "m_kill_4": (-1.0, 1.0, "float"),
+    "m_kill_5": (-1.0, 1.0, "float"),
+    "m_kill_6": (-1.0, 1.0, "float"),
+    "m_kill_7": (-1.0, 1.0, "float"),
     "castle_g": (0, 1, "int"),
     "castle_g_walk": (3, 10, "int"),
     "castle_g_walk_w": (0.0, 3.0, "float"),
@@ -91,9 +148,16 @@ SPACE = {
 }
 
 
+ACTIVE = None  # list of SPACE keys being tuned (set from --space-prefix)
+
+
+def space_items():
+    return [(k, v) for k, v in SPACE.items() if ACTIVE is None or k in ACTIVE]
+
+
 def decode(x, base):
     p = dict(base)
-    for (k, (lo, hi, kind)), v in zip(SPACE.items(), x):
+    for (k, (lo, hi, kind)), v in zip(space_items(), x):
         v = min(1.0, max(0.0, float(v)))
         val = lo + v * (hi - lo)
         p[k] = int(round(val)) if kind == "int" else round(float(val), 4)
@@ -102,7 +166,7 @@ def decode(x, base):
 
 def encode(p):
     out = []
-    for k, (lo, hi, kind) in SPACE.items():
+    for k, (lo, hi, kind) in space_items():
         v = p.get(k, (lo + hi) / 2)
         out.append(min(1.0, max(0.0, (v - lo) / (hi - lo))))
     return out
@@ -137,7 +201,12 @@ def main():
     ap.add_argument("--pfsp", type=float, default=0.0, help="weight opponents by (1-score)^p (0 = mean)")
     ap.add_argument("--mean-avg", type=int, default=8, help="also write the average of the last K CMA means")
     ap.add_argument("--gen-timeout", type=float, default=2400.0, help="seconds before a generation is abandoned")
+    ap.add_argument("--space-prefix", nargs="*", default=None, help="only tune SPACE keys starting with these")
     args = ap.parse_args()
+    global ACTIVE
+    if args.space_prefix:
+        ACTIVE = [k for k in SPACE if any(k.startswith(pf) for pf in args.space_prefix)]
+        print(json.dumps({"tuning": len(ACTIVE), "keys": ACTIVE[:8]}), flush=True)
 
     out = os.path.join(ROOT, "runs", args.name)
     os.makedirs(out, exist_ok=True)

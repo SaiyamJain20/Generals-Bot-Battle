@@ -53,7 +53,8 @@ class _LazyMaps:
 def maps():
     global _MAPS
     if _MAPS is None:
-        _MAPS = _LazyMaps(os.path.join(ROOT, "data", "maps.jsonl"))
+        # ARENA_MAPS selects another pool, e.g. data/maps_fresh.jsonl (seeds never used in tuning)
+        _MAPS = _LazyMaps(os.environ.get("ARENA_MAPS") or os.path.join(ROOT, "data", "maps.jsonl"))
     return _MAPS
 
 

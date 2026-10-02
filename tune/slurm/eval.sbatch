@@ -38,4 +38,5 @@ if [ "${WITH_EXT:-0}" = "1" ]; then
   bash tune/slurm/setup_ext.sh "$V/bin/python" "$S/bin/uv"
 fi
 TOOL="${EVAL_TOOL:-tools/abpool.py}"
+[ -n "${MAPS_FILE:-}" ] && export ARENA_MAPS="$CODE/$MAPS_FILE"
 "$V/bin/python" "$TOOL" "$@" | tee "$H/results/eval/$TAG.txt"
