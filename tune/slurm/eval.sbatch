@@ -14,6 +14,7 @@ TAG="$1"; shift
 H=/home2/$USER/botbattle-saiyam
 S=/scratch/$USER/botbattle-saiyam
 [ -n "$S" ] && [ -n "$H" ] || exit 1
+V="$S/${VENV_NAME:-venv-$SLURM_JOB_ID}"
 mkdir -p "$S/bin" "$S/cache" "$S/tmp" "$H/results/eval"
 export PIP_CACHE_DIR="$S/cache/pip" XDG_CACHE_HOME="$S/cache" UV_CACHE_DIR="$S/cache/uv" \
        UV_PYTHON_INSTALL_DIR="$S/uvpy" JAX_COMPILATION_CACHE_DIR="$S/cache/jax" \
@@ -22,19 +23,19 @@ if [ ! -x "$S/bin/uv" ]; then
   curl -LsSf https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-unknown-linux-gnu.tar.gz \
     | tar -xz -C "$S/bin" --strip-components=1
 fi
-if [ ! -x "$S/venv/bin/python" ]; then
-  "$S/bin/uv" venv -q -p 3.12 "$S/venv"
-  "$S/bin/uv" pip install -q --python "$S/venv/bin/python" cma numpy
+if [ ! -x "$V/bin/python" ]; then
+  "$S/bin/uv" venv -q -p 3.12 "$V"
+  "$S/bin/uv" pip install -q --python "$V/bin/python" cma numpy
 fi
-if ! "$S/venv/bin/python" -c "import torch" 2>/dev/null; then
-  "$S/bin/uv" pip install -q --python "$S/venv/bin/python" torch --index-url https://download.pytorch.org/whl/cpu
+if ! "$V/bin/python" -c "import torch" 2>/dev/null; then
+  "$S/bin/uv" pip install -q --python "$V/bin/python" torch --index-url https://download.pytorch.org/whl/cpu
 fi
 CODE="$S/code-eval-$TAG"
 mkdir -p "$CODE"
 cp -r "$H/code/." "$CODE/"
 cd "$CODE"
 if [ "${WITH_EXT:-0}" = "1" ]; then
-  bash tune/slurm/setup_ext.sh "$S/venv/bin/python" "$S/bin/uv"
+  bash tune/slurm/setup_ext.sh "$V/bin/python" "$S/bin/uv"
 fi
 TOOL="${EVAL_TOOL:-tools/abpool.py}"
-"$S/venv/bin/python" "$TOOL" "$@" | tee "$H/results/eval/$TAG.txt"
+"$V/bin/python" "$TOOL" "$@" | tee "$H/results/eval/$TAG.txt"
