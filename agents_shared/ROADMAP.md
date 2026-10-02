@@ -68,3 +68,12 @@ and a frozen early version (v1).
 | es2 (ES over modulator) | started on tune_base9 = default params (incumbent 0.10 vs c_a2es3) | **cancelled**, restarted as es3 on tune_base10 = participant + a2es3 params |
 | diagnosis vs ResBot-BC (24 games) | T100 land 42 vs 53, T300 land 57 vs 92, castles 0 vs 3.5; their attacks on our land T50–200: 22 vs our 13 | economy gap = land war + castles |
 | castle start 120 / 160 vs clones (80 paired games, local) | 0.425 → 0.31 / 0.31 | **rejected**: our castles get drained to 1 and captured (7/8 lost in traces) |
+| castle_keep (half drains; none near enemy), local 120 games/variant | 0.529 → 0.483; + early castles 0.471; + stack/ring castles 0.367 | **rejected** (replays: top bots drain castles fully too) |
+| strategy-port on Ada vs 4 clones (80 games/opp) | base 0.352, corridor 0.336, **combo (sweep+corridor) 0.400**, **stage (sweep+stage) 0.384** | sweep merged as flag; re-tested on current base (sw1) |
+| x_early_enemy (enemy captures get the early-expansion bonus) | 0.549 → 0.569 (n.s.) | not adopted |
+| x_kill_stealth (stealth path for kill runs > 8) | 0.543 → 0.546 | rejected (no effect) |
+| vs hvn (laptop, 40 games) | base 0.50, c_a2es3 0.50, t1c 0.625; hvn land 82–123 vs our 57–62 (T150–400), no castles | our land plateaus after T150 → x_spread / x_phase_enemy tests |
+| x_phase_enemy (enemy captures x2 at turn%50 >= 35, x0.3 below 15), 3 settings | 0.541 → 0.467 / 0.486 / 0.444 | **rejected** |
+| x_spread (post-bonus small-stack neutral spreading) | clones+: 0.555 → 0.458; hvn 60 games 0.667 → 0.583 | **rejected** |
+| **x_sweep** (exact path walk in the kill check, 10 candidate stacks) on current base | 0.580 → **0.620**; + x_stage 0.585 | **adopted** (default on, tune_base12) |
+| es3 → es4 | es3 (base10) superseded after 3 gens; es4 = ES over m_* + sweep_cands on tune_base12, warm start from es3 mean_avg | running (5 h) |

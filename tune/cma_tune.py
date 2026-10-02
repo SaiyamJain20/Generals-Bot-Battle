@@ -45,7 +45,7 @@ SPACE = {
     "hidden_stack_frac": (0.2, 0.9, "float"),
     "garrison_cap_frac": (0.1, 0.8, "float"),
     "track_threat_dist": (4, 20, "int"),
-    "v_neutral": (0.3, 2.5, "float"),
+    "v_neutral": (0.05, 2.5, "float"),
     "v_enemy": (0.5, 5.0, "float"),
     "v_kill": (0.0, 0.3, "float"),
     "bonus_mult": (1.0, 4.0, "float"),
@@ -145,6 +145,10 @@ SPACE = {
     "castle_stack_price": (0, 45, "int"),
     "lead_w": (0.0, 1.5, "float"),
     "fog_tracks": (0, 1, "int"),
+    "x_spread": (0.0, 2.0, "float"),
+    "spread_phi": (2, 25, "int"),
+    "spread_max_a": (2, 6, "int"),
+    "sweep_cands": (4, 14, "int"),
 }
 
 
