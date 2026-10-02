@@ -26,11 +26,16 @@ def _net():
     global _NET
     if _NET is None:
         path = os.environ.get("BC_NET", os.path.join(ROOT, "data", "bc", "ResBot_96x8.pt"))
+        cache = F.__dict__.setdefault("_NET_CACHE", {})   # process-wide (bc_features stays in sys.modules)
+        if path in cache:
+            _NET = cache[path]
+            return _NET
         ck = torch.load(path, map_location="cpu")
         net = Net(ch=ck["ch"], blocks=ck["blocks"])
         net.load_state_dict(ck["state"])
         net.eval()
         _NET = net
+        cache[path] = net
     return _NET
 
 

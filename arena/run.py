@@ -133,6 +133,14 @@ def play(bot_paths, map_idx, params=(None, None), limit_ms=None, first_limit_ms=
 
 
 def finish(res):
+    # bots may call gc.freeze() (good for a one-game process); undo it so the
+    # arena worker can reclaim the previous game's modules and models
+    try:
+        import gc
+        gc.unfreeze()
+        gc.collect()
+    except Exception:
+        pass
     for p in (0, 1):
         ts = sorted(res["times"][p])
         if ts:
@@ -201,7 +209,7 @@ def run_match(a, b, games, workers=8, map_offset=0, limit_ms=None, params=(None,
         tasks.append((a, b, map_offset + pair, bool(swap),
                       {"limit_ms": limit_ms, "params": params}))
     results = []
-    with Pool(workers, maxtasksperchild=50) as pool:
+    with Pool(workers, maxtasksperchild=25) as pool:
         for r in pool.imap_unordered(_task, tasks):
             results.append(r)
             if out:

@@ -145,7 +145,7 @@ def main():
                                                    "seed": 1234, "verbose": -9})
     best = (-1.0, base)
     t_end = time.time() + 3600 * args.hours
-    pool = Pool(args.workers, maxtasksperchild=200)
+    pool = Pool(args.workers, maxtasksperchild=25)
     gen = 0
     league = []
     means_hist = []
