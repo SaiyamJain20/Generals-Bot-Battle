@@ -15,3 +15,8 @@
 21:11 | rl-hier | fixed t_end discount per coordinator; tests pass; sanity run (14 it x 32 games, 3 workers) running
 21:24 | bot-finder | ksolmann beats tune_base12g 8-2 (n=10) and hunter 10-0; ronit_graph beats hunter 9-0-1, loses 0-10 to ours; threads capped
 21:40 | rl-hier | done: rl/hier/* ; tests pass; sanity 14 it: argmax 0.467+-0.064 vs tune_base12g (30 pairs fresh), 0.75 vs t1c; ~0.8 games/s on 3 workers. Report rl/agents/rl-hier.md
+22:31 | track-C (main session) | launched GRPO over the context modulator on Ada: bb-rlc-c1 (36 CPU, W8 K4 G24) + bb-rlc-c2 (10 CPU, W16 K4 G8); code rl/c/; checkpoints will appear in ~/botbattle-saiyam/rlc/results/<tag>/policy_it*.json (full PARAMS for rl/c/participant_c.py)
+22:36 | track-C | C3 (MLP-12 GRPO) running on the laptop, 9 workers, log rl/c/runs/c3/out.log
+01:42 | track-C | OFFICIAL evaluator: image codebot-python:1 built (6b00c2e0d815); submission/participant_id.py (F2) passes validate and beats starter (capture t252), first response 75 ms, max 5.6 ms; rl/c/official_parity.py: sim observe+step == official adapter on 3 full games (1564 obs identical)
+01:57 | track-C | paired eval fresh 1550-1574 (300 g each): F2 0.670, C1-it299 0.688, C3-it339 (MLP) 0.690 (t1c .52->.75), C2 0.672 (replaced by ES run e1). C3b = C3 resumed on laptop; C1 continues on Ada
+04:20 | rl-coord | Track A interim vs F2 (200 g paired, maps_fresh 1550+): roA2 i2 0.497 -> i3 0.568+-0.035; roF2 i2 0.477 -> i3 0.537+-0.035; 0 errs, 2.4 ms/turn. Final verdict on untouched 1850-1949 after runs end (~04:20 / ~05:00).
