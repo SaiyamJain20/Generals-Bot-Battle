@@ -106,6 +106,10 @@ def main():
     ap.add_argument("--hours", type=float, default=8.0)
     ap.add_argument("--map-base", type=int, default=1000)
     ap.add_argument("--start", default=None, help="json file with starting params")
+    ap.add_argument("--self-play", action="store_true", help="add the current CMA mean as an opponent")
+    ap.add_argument("--league-every", type=int, default=0, help="snapshot best into the pool every K gens")
+    ap.add_argument("--league-max", type=int, default=3)
+    ap.add_argument("--pfsp", type=float, default=0.0, help="weight opponents by (1-score)^p (0 = mean)")
     args = ap.parse_args()
 
     out = os.path.join(ROOT, "runs", args.name)
@@ -121,27 +125,44 @@ def main():
     t_end = time.time() + 3600 * args.hours
     pool = Pool(args.workers, maxtasksperchild=200)
     gen = 0
+    league = []
+    bot_src = open(os.path.join(ROOT, args.bot)).read()
+
+    def write_variant(path, params):
+        k = bot_src.index("\nDIRS = ")
+        code = bot_src[:k] + "\nPARAMS.update(" + repr(params) + ")\n" + bot_src[k:]
+        with open(path, "w") as f:
+            f.write(code)
+        return os.path.relpath(path, ROOT)
+
     while gen < args.gens and time.time() < t_end:
         xs = es.ask()
         cands = [decode(x, base) for x in xs]
+        opps = list(args.opps)
+        if args.self_play:
+            opps.append(write_variant(os.path.join(out, "self.py"), decode(es.mean, base)))
+        opps += league
         # include the incumbent so drift is visible
         cands_eval = cands + [best[1]]
         map0 = args.map_base + gen * args.games
         tasks, index = [], []
         for ci, p in enumerate(cands_eval):
-            for opp in args.opps:
+            for oi, opp in enumerate(opps):
                 for g in range(args.games):
                     pair, swap = divmod(g, 2)
                     tasks.append((args.bot, opp, map0 + pair, bool(swap), p))
-                    index.append(ci)
+                    index.append((ci, oi))
         t0 = time.time()
         res = pool.map(_game, tasks, chunksize=4)
-        scores = [0.0] * len(cands_eval)
-        counts = [0] * len(cands_eval)
-        for ci, (sc, bonus, _) in zip(index, res):
-            scores[ci] += sc + bonus
-            counts[ci] += 1
-        fit = [scores[i] / counts[i] for i in range(len(cands_eval))]
+        per = [[0.0] * len(opps) for _ in cands_eval]
+        cnt = [[0] * len(opps) for _ in cands_eval]
+        for (ci, oi), (sc, bonus, _) in zip(index, res):
+            per[ci][oi] += sc + bonus
+            cnt[ci][oi] += 1
+        per = [[per[c][o] / max(1, cnt[c][o]) for o in range(len(opps))] for c in range(len(cands_eval))]
+        opp_mean = [sum(per[c][o] for c in range(len(cands))) / len(cands) for o in range(len(opps))]
+        wts = [(1.0 - min(1.0, m) + 0.05) ** args.pfsp for m in opp_mean]
+        fit = [sum(w * x for w, x in zip(wts, per[c])) / sum(wts) for c in range(len(cands_eval))]
         es.tell(xs, [-f for f in fit[:-1]])
         gi = max(range(len(cands)), key=lambda i: fit[i])
         inc = fit[-1]
@@ -151,9 +172,14 @@ def main():
             json.dump(best[1], open(os.path.join(out, "best.json"), "w"), indent=1)
         mean_p = decode(es.mean, base)
         json.dump(mean_p, open(os.path.join(out, "mean.json"), "w"), indent=1)
+        if args.league_every and gen % args.league_every == args.league_every - 1:
+            league.append(write_variant(os.path.join(out, f"league_g{gen}.py"), cands[gi]))
+            league = league[-args.league_max:]
         rec = {"gen": gen, "best_fit": round(fit[gi], 4), "incumbent_fit": round(inc, 4),
                "mean_fit": round(sum(fit[:-1]) / len(cands), 4), "sec": round(time.time() - t0, 1),
-               "sigma": round(es.sigma, 4), "best": cands[gi]}
+               "sigma": round(es.sigma, 4),
+               "opp_mean": {os.path.basename(o): round(m, 3) for o, m in zip(opps, opp_mean)},
+               "best": cands[gi]}
         with open(os.path.join(out, "log.jsonl"), "a") as f:
             f.write(json.dumps(rec) + "\n")
         print(json.dumps({k: v for k, v in rec.items() if k != "best"}), flush=True)
