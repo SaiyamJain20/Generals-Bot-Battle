@@ -136,6 +136,7 @@ def main():
     ap.add_argument("--league-max", type=int, default=3)
     ap.add_argument("--pfsp", type=float, default=0.0, help="weight opponents by (1-score)^p (0 = mean)")
     ap.add_argument("--mean-avg", type=int, default=8, help="also write the average of the last K CMA means")
+    ap.add_argument("--gen-timeout", type=float, default=2400.0, help="seconds before a generation is abandoned")
     args = ap.parse_args()
 
     out = os.path.join(ROOT, "runs", args.name)
@@ -182,7 +183,18 @@ def main():
                     tasks.append((args.bot, path, map0 + pair, bool(swap), p))
                     index.append((ci, oi))
         t0 = time.time()
-        res = pool.map(_game, tasks, chunksize=4)
+        try:
+            res = pool.map_async(_game, tasks, chunksize=2).get(timeout=args.gen_timeout)
+        except Exception as e:  # hung/killed worker: rebuild the pool and retry this generation once
+            print(json.dumps({"gen": gen, "warning": f"pool failure {type(e).__name__}; rebuilding"}), flush=True)
+            pool.terminate()
+            pool = Pool(args.workers, maxtasksperchild=25)
+            try:
+                res = pool.map_async(_game, tasks, chunksize=2).get(timeout=args.gen_timeout)
+            except Exception:
+                pool.terminate()
+                pool = Pool(args.workers, maxtasksperchild=25)
+                continue
         per = [[0.0] * len(opps) for _ in cands_eval]
         cnt = [[0] * len(opps) for _ in cands_eval]
         for (ci, oi), (sc, bonus, _) in zip(index, res):
