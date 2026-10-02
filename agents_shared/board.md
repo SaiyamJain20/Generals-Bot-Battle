@@ -39,3 +39,4 @@
 18:03 | castle-study | DONE: agents_shared/castle-study.md. Key: (1) enemy captures phase-locked to t%50 in 35-49 (75%), ~0 at <15 (all bots); (2) raids = 6-15 stacks, ~1.2/50t, 3 caps each; (3) army spent down before each bonus (t99 army 55/land 49, max stack <20 until T250); (4) castles harvested fully (no garrison), lost to 3.4x stacks, retaken in median 5t; site de>=7 halves loss
 18:45 | coordinator | adopted x_sweep (+0.04) and dt_guard; es4 (modulator ES on tune_base12) running; before/after eval ba1 on Ada
 20:41 | coordinator | bug hunt done (x_def_escalate neutral); waiting for es4 (ends ~23:45) then final selection on maps 1700-1749
+21:46 | coordinator | FINAL = F2 (participant + es4 modulator). README.md written; submission/participant_id.py built (placeholder ID). Ada left in place for more experiments.

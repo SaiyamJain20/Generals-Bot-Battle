@@ -105,3 +105,9 @@ F2 0.821 (.85, .775, .875, 1.0, .85, .95, **bca .45**).
 | F2h (es4 modulator × 0.5), maps 1700 | 0.7245 (clones .505/.44/.565/.58, t1c .65, hunter .99) | interpolates; no free lunch |
 | **confirmation slice 1800–1849** | F0 0.692 vs **F2 0.754** (clones .64/.545/.69/.64 vs .46/.34/.46/.54; t1c .57 vs .675; hunter .90 vs .96) | F2 gain replicates; weaker vs t1c/hunter |
 | es4 modulator, what it learned | garrison bias −0.48 (+0.45·army ratio), launch bias +0.51 (+0.26·enemy castles), kill bias −0.24, capture bias −0.35 | mostly global aggression → test F2 minus garrison weights (F2g) |
+| F2g / F2gb (es4 minus garrison weights / bias), maps 1700 | 0.739 / 0.7295 (F2g: clones .47/.51/.69/.49, t1c .64, hunter .97) | more robust, less strong |
+| bca + boss, 60 more games (total 100) | bca F0 0.53 vs F2 0.435; boss 0.93 vs 0.90 | |
+| **DECISION** | **F2** = participant + es4 mean_avg: best pooled on both untouched slices (0.752, 0.754 vs 0.71, 0.69) and best worst case (0.435 vs ~0.34–0.39) | submission params = F2 |
+| gate on F2 (20 bots × 30 games) | 0 forfeits / 600; worst move 36 ms under load; min zoo_gatherer 0.833; avg 0.953 (F0 0.944) | pass (no catastrophes) |
+| subprocess timing F2 (1 core, 150 ms, 3× slowdown) | worst move 56.6 ms, worst first move 529 ms, 0 timeouts | pass |
+| built file `submission/participant_id.py` (placeholder ID) | 92,701 bytes, PARAMS == F2, DEBUG False, sha256 32256f05…74ee; 80-game sanity 0.756 | rebuild with the real ID/name |
