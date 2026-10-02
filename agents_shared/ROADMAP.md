@@ -85,3 +85,5 @@ Note: fresh-map indices wrap modulo 2000 (arena/run.py), so offsets 4000/6000 re
 comparisons inside one eval are still paired. Decision evals used fresh maps 0–49, 400–449, 500–549, 1000–1049,
 1500–1549. **Final selection uses offset 1700 (maps 1700–1749), untouched by any decision.**
 | before/after vs public bots (laptop, 40 games each) | c_a2es3 0.743 → tune_base12g 0.779 (sentinel10 .75→.90, hvn .65→.75, bca .525 both) | confirms |
+| kill_margin 0 / 5 / 9 under x_sweep (vs tuned 2) | 0.551 / 0.528 / 0.536 vs ≈0.566 | keep 2 |
+| early_expand_until 130 / 160 (bonus 7) | 0.645 → 0.615 / 0.557; vs hvn+bca 0.74 → 0.66 (160) | **rejected** |
