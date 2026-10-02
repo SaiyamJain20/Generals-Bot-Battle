@@ -264,6 +264,8 @@ def main():
     ap.add_argument("--max-turns", type=int, default=1200)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--mlp", type=int, default=0, help="hidden units of the nonlinear term (0 = linear)")
+    ap.add_argument("--resume", default=None, help="policy params JSON to resume from (anchor stays --start)")
+    ap.add_argument("--sigma-start-frac", type=float, default=0.0, help="start the sigma schedule this far in (resume)")
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
@@ -272,9 +274,19 @@ def main():
     for gi, g in enumerate(GROUPS):          # make sure the new slots exist in the base
         for j in range(NF):
             base.setdefault("m_%s_%d" % (g, j), 0.0)
-    w0 = w_from_params(base)
+    w0 = w_from_params(base)       # anchor = the start bot (F2 / es4), never the resumed checkpoint
     pol = Policy(w0, H=args.mlp, seed=args.seed)
     anchor = Policy(w0, H=0)
+    if args.resume:
+        ck = json.load(open(args.resume))
+        pol.W = w_from_params(ck)
+        if args.mlp and int(ck.get("mh_n", 0)) == args.mlp:
+            for k in range(args.mlp):
+                pol.c[k] = ck.get("mc_%d" % k, 0.0)
+                for j in range(NF):
+                    pol.U[k, j] = ck.get("mu_%d_%d" % (k, j), 0.0)
+                for gi, g in enumerate(GROUPS):
+                    pol.V[gi, k] = ck.get("mv_%s_%d" % (g, k), 0.0)
     opt = Adam(pol.pack().shape, args.lr)
     pool_paths = [os.path.join(ROOT, p) for p in (args.pool or DEFAULT_POOL)]
     pool_paths = [p for p in pool_paths if os.path.exists(p)]
@@ -291,7 +303,7 @@ def main():
     while time.time() < t_end:
         faulthandler.cancel_dump_traceback_later()
         faulthandler.dump_traceback_later(args.iter_timeout + 600, repeat=True)
-        frac = min(1.0, (time.time() - t0) / (3600 * args.hours))
+        frac = min(1.0, args.sigma_start_frac + (1 - args.sigma_start_frac) * (time.time() - t0) / (3600 * args.hours))
         sigma = args.sigma0 + (args.sigma1 - args.sigma0) * frac
         # ---- choose opponents (PFSP + 20% uniform) and build groups
         opps_all = pool_paths + league
