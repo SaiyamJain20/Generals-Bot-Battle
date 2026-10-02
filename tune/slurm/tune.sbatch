@@ -34,6 +34,9 @@ CODE="$S/code-$RUN"
 mkdir -p "$CODE"
 cp -r "$H/code/." "$CODE/"
 cd "$CODE"
+if [ "${WITH_EXT:-0}" = "1" ]; then
+  bash tune/slurm/setup_ext.sh "$S/venv/bin/python" "$S/bin/uv"
+fi
 mkdir -p "$H/results/$RUN"
 ( while true; do sleep 300; cp -f runs/"$RUN"/*.json* "$H/results/$RUN/" 2>/dev/null || true; done ) &
 SYNC=$!

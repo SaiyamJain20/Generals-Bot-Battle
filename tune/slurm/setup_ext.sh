@@ -19,3 +19,10 @@ clone https://github.com/blake-ar/generals-bots blake-ar_generals-bots df93b034f
 [ -e .venv312 ] || ln -s "$(dirname "$(dirname "$PY")")" .venv312
 "$UV" pip install -q --python "$PY" "jax==0.11.0" threadpoolctl numpy
 "$PY" -c "import jax; print('jax', jax.__version__)"
+# pre-warm the Sentinel JIT cache for all 16 board shapes (otherwise the first move can exceed 10 s)
+SDIR=vendor/ext/relh_generals-bots/competition/agents/sentinel_python
+if [ ! -f "$SDIR/.warm_done" ]; then
+  ( cd "$SDIR" && PYTHONPATH="$(cd ../../.. && pwd)" SENTINEL_MODE=competition SENTINEL_VARIANT=v10 JAX_PLATFORMS=cpu \
+    JAX_COMPILATION_CACHE_DIR="$(pwd)/.jax_cache" JAX_PERSISTENT_CACHE_MIN_COMPILE_TIME_SECS=0 \
+    "$PY" warm_cache.py ) && touch "$SDIR/.warm_done" || echo "sentinel warm failed"
+fi
