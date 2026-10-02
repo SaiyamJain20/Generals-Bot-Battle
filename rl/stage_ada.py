@@ -26,7 +26,8 @@ def main():
         shutil.rmtree(OUT)
     os.makedirs(OUT)
     files = (glob.glob(os.path.join(ROOT, "sim", "*.py")) + glob.glob(os.path.join(ROOT, "rl", "*.py"))
-             + glob.glob(os.path.join(ROOT, "rl", "hier", "*.py")) + glob.glob(os.path.join(ROOT, "rl", "slurm", "*"))
+             + glob.glob(os.path.join(ROOT, "rl", "hier", "*.py")) + glob.glob(os.path.join(ROOT, "rl", "hier", "*.json"))
+             + glob.glob(os.path.join(ROOT, "rl", "hier", "*.txt")) + glob.glob(os.path.join(ROOT, "rl", "slurm", "*"))
              + glob.glob(os.path.join(ROOT, "rl", "students", "*.pt"))
              + glob.glob(os.path.join(ROOT, "rl", "students", "ada", "*.pt"))
              + glob.glob(os.path.join(ROOT, "rl", "bots", "*.py"))
@@ -41,6 +42,13 @@ def main():
             cp(os.path.relpath(f, ROOT), os.path.relpath(f, ROOT))
     for n in args.bc_nets:
         cp(os.path.join("data", "bc", n), os.path.join("data", "bc", n))
+    # strong learned opponent (local-only code, never part of a submission): KSolmann 3M transformer
+    ks = os.path.join("vendor", "ext", "KSolmann_generals-bot-training", "agents", "current_standalone")
+    for f in ("averagejoe_model.safetensors", "main_plain.py", "main.py"):
+        cp(os.path.join(ks, f), os.path.join(ks, f))
+    for f in ("bots/opp/ext_stdio.py", "bots/opp/ext_ksolmann.py"):
+        cp(f, f)
+    # vendor/ext/_pylib (laptop-built safetensors) is NOT staged: the Ada job venv installs safetensors itself
     for name in ("maps.jsonl", "maps_fresh.jsonl"):
         with open(os.path.join(ROOT, "data", name), "rb") as fi, \
                 gzip.open(os.path.join(OUT, "data", name + ".gz"), "wb") as fo:

@@ -14,3 +14,4 @@
 21:08 | bot-finder | ksolmann wrapper works (3M plain transformer, 4/4 vs hunter); testing vs tune_base12g
 21:11 | rl-hier | fixed t_end discount per coordinator; tests pass; sanity run (14 it x 32 games, 3 workers) running
 21:24 | bot-finder | ksolmann beats tune_base12g 8-2 (n=10) and hunter 10-0; ronit_graph beats hunter 9-0-1, loses 0-10 to ours; threads capped
+21:40 | rl-hier | done: rl/hier/* ; tests pass; sanity 14 it: argmax 0.467+-0.064 vs tune_base12g (30 pairs fresh), 0.75 vs t1c; ~0.8 games/s on 3 workers. Report rl/agents/rl-hier.md

@@ -25,12 +25,13 @@ if [ ! -x "$S/bin/uv" ]; then
 fi
 V="$S/rl-venv-$SLURM_JOB_ID"
 "$S/bin/uv" venv -q -p 3.12 "$V"
-"$S/bin/uv" pip install -q --python "$V/bin/python" numpy
+"$S/bin/uv" pip install -q --python "$V/bin/python" numpy safetensors
 "$S/bin/uv" pip install -q --python "$V/bin/python" torch --index-url https://download.pytorch.org/whl/cpu
 W="$S/rl-run-$TAG"
 mkdir -p "$W"
 cp -r "$H/rl/code/." "$W/"
 cd "$W"
+[ -e .venv312 ] || ln -s "$V" .venv312   # ext_* wrappers call ../../.venv312/bin/python (dir link keeps pyvenv.cfg)
 [ -f data/maps.jsonl ] || gunzip -k data/maps.jsonl.gz
 [ -f data/maps_fresh.jsonl ] || [ ! -f data/maps_fresh.jsonl.gz ] || gunzip -k data/maps_fresh.jsonl.gz
 mkdir -p "$OUTSUB"
