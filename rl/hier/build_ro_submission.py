@@ -27,7 +27,7 @@ def build(weights_path, out_path):
     w = json.load(open(weights_path))
     w = {k: (rnd(v) if k not in ("alpha0",) else float(v)) for k, v in w.items()}
     w["alpha"] = float(w["alpha"])
-    src = open(os.path.join(HERE, "bot_ro.py")).read()
+    src = open(os.path.join(HERE, os.environ.get("RO_BOT", "bot_ro.py"))).read()
     assert src.count(MARK) == 1, "RO_W marker not found in bot_ro.py"
     lit = "RO_W = " + json.dumps(w, separators=(",", ":")) + "  # trained RO-PPO weights"
     out = src.replace(MARK, lit)

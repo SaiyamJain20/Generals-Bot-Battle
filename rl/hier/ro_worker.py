@@ -18,7 +18,7 @@ for p in (ROOT, os.path.join(ROOT, "arena")):
 from sim import engine as E  # noqa: E402
 import run as AR  # noqa: E402  (arena/run.py)
 
-BOT_RO = os.path.join(HERE, "bot_ro.py")
+BOT_RO = os.path.join(HERE, os.environ.get("RO_BOT", "bot_ro.py"))  # RO_BOT=bot_ro_F2.py for the F2 base
 
 
 def load_ro(weights, sample=False, record=None, seed=0):

@@ -34,7 +34,7 @@ def main():
              + glob.glob(os.path.join(ROOT, "arena", "*.py")) + [os.path.join(ROOT, "tools", "abmulti.py")])
     for f in files:
         cp(os.path.relpath(f, ROOT), os.path.relpath(f, ROOT))
-    for f in ("learn/bc_features.py", "learn/bc_train.py", "bots/versions/tune_base12g.py",
+    for f in ("learn/bc_features.py", "learn/bc_train.py", "bots/versions/tune_base12g.py", "bots/versions/F2.py",
               "bots/versions/t1c.py", "bots/versions/c_a2es3.py"):
         cp(f, f)
     for f in glob.glob(os.path.join(ROOT, "bots", "opp", "*.py")):
