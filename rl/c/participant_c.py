@@ -1552,6 +1552,20 @@ class Bot:
             for j in range(len(f)):
                 z += P.get("m_%s_%d" % (gname, j), 0.0) * f[j]
             mu[gname] = z
+        nh = int(P.get("mh_n", 0))
+        if nh > 0:
+            # nonlinear part: z_g += sum_k v[g][k] * tanh(u[k] . f + c[k])
+            mlp = getattr(self, "_mlp", None)
+            if mlp is None:
+                U = [[P.get("mu_%d_%d" % (k, j), 0.0) for j in range(len(f))] for k in range(nh)]
+                C = [P.get("mc_%d" % k, 0.0) for k in range(nh)]
+                V = {g: [P.get("mv_%s_%d" % (g, k), 0.0) for k in range(nh)] for g in self.MOD_GROUPS}
+                mlp = self._mlp = (U, C, V)
+            U, C, V = mlp
+            h = [math.tanh(C[k] + sum(U[k][j] * f[j] for j in range(len(f)))) for k in range(nh)]
+            for gname in self.MOD_GROUPS:
+                vg = V[gname]
+                mu[gname] += sum(vg[k] * h[k] for k in range(nh))
         rl = RL
         if rl is not None:
             # training only: Gaussian exploration in logit space, held for a window of W turns
