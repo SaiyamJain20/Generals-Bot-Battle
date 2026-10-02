@@ -77,6 +77,11 @@ SPACE = {
     "x_no_pass": (0, 1, "int"),
     "snipe_range": (0, 20, "int"),
     "snipe_margin": (0, 12, "int"),
+    "threat_far": (12, 30, "int"),
+    "closing_min": (1, 4, "int"),
+    "far_decay_mult": (0.2, 1.2, "float"),
+    "min_def_budget": (1, 8, "int"),
+    "track_max_adv": (3, 15, "int"),
     "lead_w": (0.0, 1.5, "float"),
     "fog_tracks": (0, 1, "int"),
 }
@@ -166,9 +171,11 @@ def main():
         tasks, index = [], []
         for ci, p in enumerate(cands_eval):
             for oi, opp in enumerate(opps):
-                for g in range(args.games):
+                path, _, ng = opp.partition(":")   # "bot.py:4" -> 4 games vs that opponent
+                ng = int(ng) if ng else args.games
+                for g in range(ng):
                     pair, swap = divmod(g, 2)
-                    tasks.append((args.bot, opp, map0 + pair, bool(swap), p))
+                    tasks.append((args.bot, path, map0 + pair, bool(swap), p))
                     index.append((ci, oi))
         t0 = time.time()
         res = pool.map(_game, tasks, chunksize=4)
@@ -200,7 +207,7 @@ def main():
         rec = {"gen": gen, "best_fit": round(fit[gi], 4), "incumbent_fit": round(inc, 4),
                "mean_fit": round(sum(fit[:-1]) / len(cands), 4), "sec": round(time.time() - t0, 1),
                "sigma": round(es.sigma, 4),
-               "opp_mean": {os.path.basename(o): round(m, 3) for o, m in zip(opps, opp_mean)},
+               "opp_mean": {os.path.basename(o.partition(":")[0]): round(m, 3) for o, m in zip(opps, opp_mean)},
                "best": cands[gi]}
         with open(os.path.join(out, "log.jsonl"), "a") as f:
             f.write(json.dumps(rec) + "\n")
