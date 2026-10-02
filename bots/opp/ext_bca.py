@@ -22,9 +22,12 @@ os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS", "JAX_NUM_THREADS"):
     os.environ.setdefault(_v, "1")
 
-_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "vendor", "ext",
-                    "blake-ar_generals-bots", "competition", "agents", "conv_1313")
-_CACHE = sys.__dict__.setdefault("_porter_bca_cache", {})
+PARAMS = {"model": "conv_1313"}  # or "smoke_1260_baseline" (earlier bca checkpoint, iter 1260)
+_AGENTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "vendor", "ext",
+                       "blake-ar_generals-bots", "competition", "agents")
+_CLASSES = {"conv_1313": "Conv1313Agent", "smoke_1260_baseline": "Smoke1260Agent"}
+_DIR = os.path.join(_AGENTS, "conv_1313")
+_CACHES = sys.__dict__.setdefault("_porter_bca_caches", {})
 
 
 os.environ.setdefault("JAX_COMPILATION_CACHE_DIR", os.path.join(_DIR, ".jax_cache"))
@@ -32,6 +35,7 @@ os.environ.setdefault("JAX_PERSISTENT_CACHE_MIN_COMPILE_TIME_SECS", "0")
 
 
 def _module():
+    _CACHE = _CACHES.setdefault(PARAMS["model"], {})
     if "mod" not in _CACHE:
         import jax
         try:  # persistent compile cache keeps the first move well under the 10 s limit
@@ -39,7 +43,8 @@ def _module():
             jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
         except Exception:
             pass
-        spec = importlib.util.spec_from_file_location("_bca_conv1313_bot", os.path.join(_DIR, "bot.py"))
+        spec = importlib.util.spec_from_file_location("_bca_bot_" + PARAMS["model"],
+                                                      os.path.join(_AGENTS, PARAMS["model"], "bot.py"))
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         _CACHE["mod"] = mod
@@ -51,7 +56,8 @@ _agent = [None, -1]
 
 def _new_agent(H, W):
     mod = _module()
-    a = mod.Conv1313Agent(H, W)
+    _CACHE = _CACHES[PARAMS["model"]]
+    a = getattr(mod, _CLASSES[PARAMS["model"]])(H, W)
     if "forward" in _CACHE:  # reuse compiled function + weights from an earlier game
         a._forward = _CACHE["forward"]
         a.parameters = _CACHE["params"]

@@ -64,6 +64,14 @@ SPACE = {
     "v_near_home": (0.0, 5.0, "float"),
     "fortress_turn": (650, 790, "int"),
     "learned_threat_w": (0.0, 1.2, "float"),
+    "early_expand_until": (0, 130, "int"),
+    "early_expand_bonus": (0.0, 10.0, "float"),
+    "ring_w": (0.0, 1.0, "float"),
+    "ring_r": (1, 3, "int"),
+    "castle_front_w": (0.0, 3.0, "float"),
+    "stealth_w": (0.0, 4.0, "float"),
+    "lead_w": (0.0, 1.5, "float"),
+    "fog_tracks": (0, 1, "int"),
 }
 
 
@@ -111,6 +119,7 @@ def main():
     ap.add_argument("--league-every", type=int, default=0, help="snapshot best into the pool every K gens")
     ap.add_argument("--league-max", type=int, default=3)
     ap.add_argument("--pfsp", type=float, default=0.0, help="weight opponents by (1-score)^p (0 = mean)")
+    ap.add_argument("--mean-avg", type=int, default=8, help="also write the average of the last K CMA means")
     args = ap.parse_args()
 
     out = os.path.join(ROOT, "runs", args.name)
@@ -127,6 +136,7 @@ def main():
     pool = Pool(args.workers, maxtasksperchild=200)
     gen = 0
     league = []
+    means_hist = []
     bot_src = open(os.path.join(ROOT, args.bot)).read()
 
     def write_variant(path, params):
@@ -173,6 +183,10 @@ def main():
             json.dump(best[1], open(os.path.join(out, "best.json"), "w"), indent=1)
         mean_p = decode(es.mean, base)
         json.dump(mean_p, open(os.path.join(out, "mean.json"), "w"), indent=1)
+        means_hist.append([float(v) for v in es.mean])
+        k = min(len(means_hist), args.mean_avg)
+        avg = [sum(m[j] for m in means_hist[-k:]) / k for j in range(len(means_hist[-1]))]
+        json.dump(decode(avg, base), open(os.path.join(out, "mean_avg.json"), "w"), indent=1)
         if args.league_every and gen % args.league_every == args.league_every - 1:
             league.append(write_variant(os.path.join(out, f"league_g{gen}.py"), cands[gi]))
             league = league[-args.league_max:]

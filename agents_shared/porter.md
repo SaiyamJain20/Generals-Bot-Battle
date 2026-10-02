@@ -98,3 +98,8 @@ Extracted copies: vendor/ext/juraj/{juraj_v34,juraj_v35,doomstack}, vendor/ext/j
 - Rules caveats: all are competition-ruleset native (castle building, deathtouch 800, cap 1200) except: mybot9 written for
   an older castle price (patched to 14 by default); doomstack never builds; the learned bots (amin, bca) are greedy argmax
   (deterministic), as in their submissions.
+- (06:15) **bca: t1c vs bca 0.50 (8W 0D 8L)** => bca scores 0.50 vs t1c, the strongest sparring partner so far.
+  **sentinel10: t1c vs sentinel10 0.50 (10-0-10)** => v10 is far stronger vs t1c than default v2 (0.075). Per move ~17-24 ms.
+  relhexp: random 1.00, hunter 1.00, t1c vs relhexp 1.00 (relhexp 0.00); per move mean 1.5 ms but p99 up to 195 ms, max 201 ms.
+- ext_bca1260: bca's earlier checkpoint (competition/agents/smoke_1260_baseline, Smoke1260Agent), same wrapper (ext_bca.py
+  PARAMS["model"]). ~38 ms/move when the box is quieter. Lost to conv_1313 on map 303.

@@ -23,3 +23,5 @@
 06:07 | porter | +ext_boss (bca NumPy heuristic), ext_humanexe (bca JAX port of EklipZ Human.exe), ext_relhexp; bca 0.94 vs hunter
 06:10 | experimenter | started: A/B of algo-study §4 ports vs exp_base (= participant.py + runs/local3_best.json); notes in agents_shared/experimenter.md
 06:3x | vast-research | section 0-1 (framing + 25 ranked ideas) written to agents_shared/vast-research.md
+06:4x | vast-research | DONE: agents_shared/vast-research.md (25 ideas, test plans, sources); top: stealth routing, archetype gate matrix, launch-value, CMA mean averaging, SPRT, catastrophe gate
+06:13 | porter | STRONG: ext_bca and ext_sentinel10 both score 0.50 vs t1c (16/20 games); juraj34 0.20, superbot/hvn 0.15
