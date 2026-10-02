@@ -1,28 +1,38 @@
 """
-Code Bot entry — participant: [PARTICIPANT_ID]   bot: [BOT_NAME]
+Code Bot entry. participant: [PARTICIPANT_ID]   bot: [BOT_NAME]
 
-Strategy (heuristic + exact rules):
-  * Exact bookkeeping of the opponent from opp_army / opp_land each turn: every
-    enemy castle build is detected with its exact price; new type-5 cells (after
-    turn 0 all mountains are known) locate the castle; the price pins the enemy
-    general to a Manhattan ring around it.
-  * Enemy-general belief from the map generator's spawn rules (BFS >= 17,
-    |room7 - ours| <= 5), fog observations, castle-price rings and land counts.
-  * Wave opening (~25 land at turn 50), land-bonus expansion, castle economy from
-    the general's stack, threat-scaled garrison, gather trees (pruned by value per
-    move), stack strikes at the general, deathtouch fortress + strike after 800.
-  * One-turn exact resolution (pinned move order: chasing > reinforcing >
-    smaller army) to veto moves that lose the general.
+Strategy (stdlib-only heuristic, every rule simulated exactly):
+  * Memory + exact opponent accounting.
+    - opp_army / opp_land deltas reveal every enemy castle build and its exact price.
+    - New type-5 cells locate those castles.
+    - The price pins the enemy general to a Manhattan ring around the castle.
+  * Enemy-general belief.
+    - Spawn rules (walking distance >= 17, |room7 - ours| <= 5) narrow the candidate cells.
+    - Fog sightings and castle-price rings prune them further.
+    - A small learned spawn prior (logistic regression on generator samples) ranks what is left.
+  * Opening: a simulated opening plan (about 24 land at turn 50), then fast expansion to about 50 land at turn 100.
+  * Army cycles.
+    - Greedy value-per-move gather trees feed the general's stack.
+    - Half of it is launched at the most likely general, castles, or nearby threats, routed stealthily.
+  * Defence.
+    - The garrison scales with visible, tracked (approaching) and hidden enemy armies.
+    - Defensive gathers are budgeted by the arrival time of the binding threat.
+    - An adjacent stack chase-kills an attacker.
+    - An exact one-turn resolver (chasing > reinforcing > smaller army) vetoes moves that lose the general.
+  * Castle economy, enemy-castle sniping, and a deathtouch fortress/strike after turn 800.
+  * All numeric parameters are tuned by CMA-ES self-play.
+    - Opponents include older versions, a heuristic zoo, public competition bots, and
+      behaviour-cloned neural clones of the top Marathon bots.
 
 Sources / attribution:
-  * Rules and move-order semantics re-implemented from strakam/generals-bots
-    @13db8f69 (MIT), which is the pinned competition engine.
-  * Ideas (not code): EklipZ generals-bot gather pruning / back-tracing;
-    Straka & Schmid, "Artificial Generals Intelligence" (arXiv 2507.06825);
-    statistics from public generals.bot tournament replays.
-AI assistance: developed with Claude Code (Anthropic) as a coding assistant;
-all strategy code is in this file and was reviewed by the participant.
-Standard library only.
+  * Rules and move order re-implemented from strakam/generals-bots@13db8f69 (MIT), the pinned engine.
+  * Ideas only, no code:
+    - EklipZ generals-bot (gather pruning, back-tracing);
+    - relh Sentinel and juraj bots (chase-kill interceptor);
+    - Straka & Schmid, arXiv 2507.06825;
+    - statistics and behaviour clones from the public generals.bot Marathon replays.
+AI assistance: developed with Claude Code (Anthropic) as a coding/research assistant. The strategy code is
+all in this file and was reviewed by the participant. Standard library only.
 """
 import gc
 import math

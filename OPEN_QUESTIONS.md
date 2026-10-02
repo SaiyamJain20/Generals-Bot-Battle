@@ -16,3 +16,9 @@ Update this file as answers arrive. Resolved items move to the bottom.
 - Training on public generals.bot replays: **OK** (user confirmed, 2026-10-02). Attribute in file header.
 - Build window: 30 h for this user (PDF says 20 h).
 - Core approach: heuristic + exact sim tactics + CMA-ES tuning + small learned eval (user choice).
+
+## New (2026-10-02 midday)
+| # | Question | Who | Status |
+|---|---|---|---|
+| 7 | May we build and run the third-party C++ bot "A9" (mortid0/generals-bots, Marathon branch, `atlas-negative-candidate.zip`, already downloaded to vendor/ext/mortid0_a9) as a LOCAL sparring partner? The permission classifier blocked building it. | You | OPEN |
+| 8 | Participant ID and bot name for the submission file name and header (`participant_id.py`) | You | OPEN |
