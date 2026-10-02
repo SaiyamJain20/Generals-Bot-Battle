@@ -16,3 +16,4 @@ data/prior*.jsonl
 runs/*/league_*.py
 runs/*/self.py
 .scratch/
+data/castle_study_recs*.jsonl
