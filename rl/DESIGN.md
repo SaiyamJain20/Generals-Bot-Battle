@@ -3,6 +3,20 @@
 Status: design v1, 2 Oct ~21:15 IST. Deadline 3 Oct 12:00 IST. The heuristic bot (main checkout) remains
 the safe submission; this track only replaces it if it beats it under the gates in section 7.
 
+## 0. Official facts (evaluator.zip README + organizer answers relayed by the user, 3 Oct ~01:45)
+- Deadline: 3 Oct 2026, 2:00 PM IST.
+- Format: a league where each pair plays 2 games with seats swapped (W/D/L = 1/0.5/0). The top 4 then play
+  4-game semifinals and a 6-game final; tied playoffs get extra pairs.
+- Runtime: 1 core (Sapphire Rapids), shared by both bots, taking turns and paused between decisions.
+  150 ms wall per call including observation transport; 10 s for the first call including import.
+  2 GiB RAM, at most 32 processes/threads.
+- Forfeits: an invalid action code, exception or timeout forfeits; a legal-format illegal move is a pass.
+- File: one .py of at most 1 MiB with no separate model files, so any learned weights are embedded
+  ("checkpoint size depends on your training" within that cap).
+- Open-source bots may not be submitted (the organizers have a list); taking inspiration is allowed.
+  External bots here are local sparring partners only.
+- The evaluator engine is byte-identical to our vendored pin, and boards are exact-size (no padding).
+
 ## 1. Grounded starting facts (measured or sourced; see rl/agents/rl-survey.md)
 - Deployment wall: stdlib Python, <= 1 MiB, 150 ms/move on one shared CPU.
   - One dense 8->8 3x3 conv layer over 21x21 is ~80 ms in naive pure Python (rl-survey), so dense CNN
