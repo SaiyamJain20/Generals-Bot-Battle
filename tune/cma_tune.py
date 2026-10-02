@@ -10,6 +10,7 @@ the best params so far are written to runs/<name>/best.json.
         --opps bots/opp/hunter.py bots/opp/rusher.py bots/versions/v1.py
 """
 import argparse
+import faulthandler
 import json
 import math
 import os
@@ -237,6 +238,10 @@ def main():
         return os.path.relpath(path, ROOT)
 
     while gen < args.gens and time.time() < t_end:
+        # watchdog: if a generation stalls (es4 hung for >1 h with idle workers), dump every
+        # thread's stack to stderr (the job log) instead of hanging silently
+        faulthandler.cancel_dump_traceback_later()
+        faulthandler.dump_traceback_later(args.gen_timeout + 600, repeat=True)
         xs = es.ask()
         cands = [decode(x, base) for x in xs]
         opps = list(args.opps)
