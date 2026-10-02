@@ -36,11 +36,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--max", type=int, default=0, help="0 = all")
     ap.add_argument("--workers", type=int, default=16)
+    ap.add_argument("--players", nargs="*", default=None, help="only matches involving these bots")
+    ap.add_argument("--events", nargs="*", default=None, help="subset of: marathon sprint")
     args = ap.parse_args()
 
     os.makedirs(ROOT, exist_ok=True)
     jobs = []
     for event, url in INDEXES.items():
+        if args.events and event not in args.events:
+            continue
         try:
             index = json.loads(fetch(url))
         except Exception as e:  # keep going with the other index
@@ -50,6 +54,8 @@ def main():
             json.dump(index, f)
         for m in matches_of(index):
             if not m.get("replay_gz"):
+                continue
+            if args.players and m.get("p0_name") not in args.players and m.get("p1_name") not in args.players:
                 continue
             m = dict(m, event=event)
             base = m["replay_gz"].rsplit("/", 1)[-1]  # "<seed>-<a_side>.json.gz"

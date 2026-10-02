@@ -29,11 +29,31 @@ _MAPS = None
 _COUNTER = [0]
 
 
+class _LazyMaps:
+    """Raw JSON lines kept as strings; each map parsed on first use (saves ~130 MB per worker)."""
+
+    def __init__(self, path):
+        with open(path) as f:
+            self.lines = f.readlines()
+        self.cache = {}
+
+    def __len__(self):
+        return len(self.lines)
+
+    def __getitem__(self, i):
+        m = self.cache.get(i)
+        if m is None:
+            m = json.loads(self.lines[i])
+            if len(self.cache) > 64:
+                self.cache.clear()
+            self.cache[i] = m
+        return m
+
+
 def maps():
     global _MAPS
     if _MAPS is None:
-        with open(os.path.join(ROOT, "data", "maps.jsonl")) as f:
-            _MAPS = [json.loads(line) for line in f]
+        _MAPS = _LazyMaps(os.path.join(ROOT, "data", "maps.jsonl"))
     return _MAPS
 
 
