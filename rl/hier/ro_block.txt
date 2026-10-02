@@ -1,0 +1,161 @@
+# ======================================================================
+# RO (Residual Option) policy hook. RO_W None => exactly the heuristic.
+# z_i = alpha*s_i + b[lab] + u[lab].phi + v.psi_i + Uh[lab].tanh(W1 phi + b1)
+# ======================================================================
+import random as _random
+
+RO_W = None          # weights dict (see rl/hier/ro_ppo.py::default_weights) or None
+RO_SAMPLE = False    # sample from softmax(z) instead of argmax
+RO_RECORD = None     # list => append one record per decision (training only)
+RO_RNG = _random.Random(0)
+RO_LABELS = ("capture", "garrison", "build", "scout", "home", "launch",
+             "cyc_attack", "cyc_castle", "other")
+_RO_LIDX = {n: i for i, n in enumerate(RO_LABELS)}
+RO_NPHI = 24
+RO_NPSI = 8
+_RO_CACHE = [None, None]
+
+
+def _ro_lab(label):
+    i = _RO_LIDX.get(label)
+    if i is not None:
+        return i
+    if label == "cyc_castle_g":
+        return _RO_LIDX["cyc_castle"]
+    return len(RO_LABELS) - 1
+
+
+def _ro_clip(x, lo=-1.0, hi=1.0):
+    return lo if x < lo else (hi if x > hi else x)
+
+
+def _ro_phi(b, nopt, need_g):
+    t = b.turn
+    A, g = b.A, b.general
+    Ag = A[g] if g >= 0 else 0
+    lg = math.log
+    cyc = b.cyc
+    mode = cyc.get("mode") if cyc else None
+    ret = 1.0 if b.threat_eta >= INF else _ro_clip(min(b.threat_eta, 20) / 10.0 - 1.0)
+    trk = max((tr[1] for tr in b.tracks), default=0)
+    hidden = b.opp_army - b.vis_enemy_army - max(0, b.opp_land - b.vis_enemy_cells - 1)
+    ph = 2.0 * math.pi * (t % 50) / 50.0
+    ll = getattr(b, "ro_last_launch", -1000)
+    return [
+        _ro_clip(t / 600.0 - 1.0),
+        math.tanh(lg(max(1, b.my_army) / max(1, b.opp_army))),
+        math.tanh(lg(max(1, b.my_land) / max(1, b.opp_land))),
+        _ro_clip(math.log1p(b.my_army) / 4.0 - 1.0),
+        _ro_clip(math.log1p(b.opp_army) / 4.0 - 1.0),
+        math.tanh(need_g / (Ag + 1.0) - 1.0),
+        _ro_clip(math.log1p(Ag) / 4.0 - 1.0),
+        ret,
+        math.tanh(trk / (Ag + 1.0) - 1.0),
+        min(len(b.enemy_castles), 5) / 2.5 - 1.0,
+        min(len(b.my_castles), 5) / 2.5 - 1.0,
+        1.0 if b.egen >= 0 else -1.0,
+        _ro_clip(min(b.fog_distance(), 20) / 10.0 - 1.0),
+        -1.0 if mode is None else (0.0 if mode == "gather" else 1.0),
+        1.0 if (cyc and cyc.get("purpose") == "attack") else -1.0,
+        _ro_clip(min(t - ll, 100) / 50.0 - 1.0),
+        math.sin(ph),
+        math.cos(ph),
+        2.0 * b.enemy_gather_ratio() - 1.0,
+        nopt / 3.0 - 1.0,
+        1.0 if b.defence < need_g else -1.0,
+        _ro_clip(math.log1p(max(0, hidden)) / 5.0 - 1.0),
+        _ro_clip(math.log1p(b.vis_enemy_army) / 5.0 - 1.0),
+        2.0 * b.my_land / max(1, b.n) - 1.0,
+    ]
+
+
+def _ro_psi(b, opt):
+    a = opt[1]
+    out = [0.0] * RO_NPSI
+    try:
+        W = b.W
+        A, O = b.A, b.O
+        if a and a[0] in (0, 2):
+            src = a[1] * W + a[2]
+            out[0] = _ro_clip(math.log1p(A[src]) / 5.0 - 1.0)
+            out[5] = 1.0 if src == b.general else -1.0
+            if a[0] == 0:
+                dr, dc = DIRS[a[3]]
+                dst = (a[1] + dr) * W + a[2] + dc
+                out[1] = _ro_clip(min(b.dist_g[dst], 20) / 10.0 - 1.0)
+                o = O[dst]
+                out[2] = 1.0 if o == 1 else -1.0
+                out[3] = 1.0 if o == 2 else -1.0
+                out[4] = 1.0 if o == 0 else -1.0
+                if o != 1:
+                    out[7] = math.tanh(math.log(max(1, A[src]) / (A[dst] + 1.0)))
+            cyc = b.cyc
+            if opt[2].startswith("cyc") and cyc and cyc.get("mode") == "gather":
+                out[6] = _ro_clip(2.0 * cyc.get("moves", 0) / max(1, cyc.get("budget", 1)) - 1.0)
+    except Exception:
+        pass
+    return out
+
+
+def _ro_prep(W):
+    """Cache numeric structures for a weights dict."""
+    if _RO_CACHE[0] is W:
+        return _RO_CACHE[1]
+    c = {"alpha": float(W["alpha"]), "alpha0": float(W["alpha0"]), "u": W["u"], "v": W["v"],
+         "b": W["b"], "W1": W.get("W1") or [], "b1": W.get("b1") or [], "Uh": W.get("Uh") or []}
+    _RO_CACHE[0], _RO_CACHE[1] = W, c
+    return c
+
+
+def _ro_logits(c, phi, psis, labs, scores):
+    h = None
+    if c["W1"]:
+        tanh = math.tanh
+        h = [tanh(bb + sum(w * x for w, x in zip(row, phi))) for row, bb in zip(c["W1"], c["b1"])]
+    v = c["v"]
+    al = c["alpha"]
+    zs = []
+    for s, lab, psi in zip(scores, labs, psis):
+        z = al * s + c["b"][lab] + sum(w * x for w, x in zip(c["u"][lab], phi)) \
+            + sum(w * x for w, x in zip(v, psi))
+        if h is not None:
+            z += sum(w * x for w, x in zip(c["Uh"][lab], h))
+        zs.append(z)
+    return zs
+
+
+def _ro_logsm(zs):
+    m = max(zs)
+    lse = m + math.log(sum(math.exp(z - m) for z in zs))
+    return [z - lse for z in zs]
+
+
+def _ro_pick(b, options, need_g):
+    """Index of the chosen option in `options` (sorted by heuristic score)."""
+    c = _ro_prep(RO_W)
+    scores = [o[0] for o in options]
+    labs = [_ro_lab(o[2]) for o in options]
+    phi = _ro_phi(b, len(options), need_g)
+    psis = [_ro_psi(b, o) for o in options]
+    lp = _ro_logsm(_ro_logits(c, phi, psis, labs, scores))
+    if RO_SAMPLE:
+        r = RO_RNG.random()
+        acc = 0.0
+        k = len(lp) - 1
+        for i, x in enumerate(lp):
+            acc += math.exp(x)
+            if r < acc:
+                k = i
+                break
+    else:
+        k = max(range(len(lp)), key=lambda i: lp[i])
+    if options[k][2] == "launch":
+        b.ro_last_launch = b.turn
+    if RO_RECORD is not None:
+        lr = _ro_logsm([c["alpha0"] * s for s in scores])
+        RO_RECORD.append({"phi": phi, "psi": psis, "s": scores, "lab": labs, "a": k,
+                          "logp": lp[k], "logp_ref": lr[k], "turn": b.turn,
+                          "cnt": (b.my_army, b.opp_army, b.my_land, b.opp_land)})
+    return k
+
+
