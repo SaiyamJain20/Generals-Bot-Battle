@@ -41,9 +41,6 @@ PARAMS = {
     "garrison_cap_frac": 0.5,      # never keep more than this fraction of our army at home
     "threat_margin": 2,
     "learned_threat_w": 0.0,
-    "fog_model": 0.0,
-    "fog_tracks": 0,
-    "gather_ratio_adj": 0.3,
     "threat_vis_range": 10,
     "threat_decay": 1.0,
     # option weights
@@ -95,11 +92,6 @@ PARAMS = {
     "castle_home_n": 2,
     "castle_home_maxd": 3,
     "castle_home_w": 6.0,
-    "castle_front_w": 0.0,
-    "ring_r": 2,
-    "ring_w": 0.0,
-    "early_expand_until": 0,
-    "early_expand_bonus": 3.0,
     # army cycle
     "gather_budget": 14,
     "gather_default_budget": 40,
@@ -182,13 +174,6 @@ class Bot:
         self.pending_stack = None
         self.threat_eta = INF
         self.tracks = []
-        self.prevT = self.prevO = self.prevA = None
-        self.prev_opp_land = 0
-        self.built_this_turn = False
-        self.last_enemy_kind = "fog"
-        self.enemy_kind_hist = []
-        self.fq = [0] * 64
-        self.fog_stack = 0
         self.last_purpose = None
         self.need_g = 2
         self.turn = -1
@@ -390,14 +375,12 @@ class Bot:
             S_prev = 1 + len(prev["enemy_castles"])
             S_now = S_prev + len(lost) - len(gained_from_enemy)
             built = 0
-            self.built_this_turn = False
             if g2:
                 if R != S_now:
                     built = S_now + 1 - R
             else:
                 built = -R
             if built >= 35:
-                self.built_this_turn = True
                 cell = self.locate_new_castle(new_struct_fog, vis_enemy_castles, prev)
                 if cell >= 0:
                     self.castle[cell] = True
@@ -416,118 +399,7 @@ class Bot:
                      "build_cost_cache": {}}
         # belief pruning from land count / first sightings
         self.prune_candidates()
-        try:
-            self.classify_enemy_move()
-        except Exception:
-            if DEBUG:
-                raise
-            self.last_enemy_kind = "fog"
-        self.prevT, self.prevO, self.prevA = T, O, A
-        self.prev_opp_land = opp_land
         self.update_tracks()
-
-    def classify_enemy_move(self):
-        """One enemy action per tick: 'vis' (seen), 'build', 'fogcap' (fog capture) or
-        'foggather' (fog merge). Maintains a histogram of fog enemy tile armies and the
-        army the enemy has concentrated in fog (EklipZ's fog gather queue idea)."""
-        t = self.turn
-        T, O, A = self.T, self.O, self.A
-        pT, pO, pA = self.prevT, self.prevO, self.prevA
-        kind = "foggather"
-        if pT is None:
-            self.last_enemy_kind = "fog"
-            return
-        la = self.last_action
-        my_dst = -1
-        if la and la[0] == 0:
-            dr, dc = DIRS[la[3]]
-            my_dst = (la[1] + dr) * self.W + la[2] + dc
-        took = 0
-        g2 = t % 2 == 0
-        g50 = t % 50 == 0
-        if self.built_this_turn:
-            kind = "build"
-        else:
-            for i in range(self.n):
-                if T[i] in (0, 5) or pT[i] in (0, 5):
-                    continue
-                if pO[i] == 2 and O[i] == 1:
-                    took += 1
-                if O[i] == 2:
-                    if pO[i] != 2 and i != my_dst:
-                        kind = "vis"
-                        break
-                    if pO[i] == 2:
-                        grow = (1 if g2 and T[i] in (3, 4) else 0) + (1 if g50 else 0)
-                        if A[i] < pA[i] + grow and i != my_dst:
-                            kind = "vis"
-                            break
-            if kind != "vis":
-                dland = self.opp_land - self.prev_opp_land + took
-                kind = "fogcap" if dland >= 1 else "foggather"
-        self.last_enemy_kind = kind
-        hist = self.enemy_kind_hist
-        hist.append(kind)
-        if len(hist) > 50:
-            del hist[0]
-        fq = self.fq
-        if g50:
-            fq.insert(1, 0)
-            fq.pop()
-            fq[1] += fq[0]
-            fq[0] = 0
-        if kind == "foggather":
-            v = 0
-            for k in range(len(fq) - 1, 1, -1):
-                if fq[k]:
-                    v = k
-                    break
-            if v >= 2:
-                fq[v] -= 1
-                fq[1] += 1
-                self.fog_stack += v - 1
-        elif kind == "fogcap":
-            if fq[2]:
-                fq[2] -= 1
-                fq[1] += 2
-            else:
-                fq[1] += 1
-                self.fog_stack = max(0, self.fog_stack - 1)
-        gen_vis = self.egen >= 0 and T[self.egen] == 4
-        fog_castles = sum(1 for c in self.enemy_castles if T[c] in (0, 5))
-        nfog = max(0, self.opp_land - self.vis_enemy_cells - (0 if gen_vis else 1) - fog_castles)
-        cur = sum(fq)
-        if cur < nfog:
-            fq[1] += nfog - cur
-        elif cur > nfog:
-            extra = cur - nfog
-            for k in range(1, len(fq)):
-                take = min(fq[k], extra)
-                fq[k] -= take
-                extra -= take
-                if extra <= 0:
-                    break
-        hidden = self.opp_army - self.vis_enemy_army - max(0, self.opp_land - self.vis_enemy_cells)
-        self.fog_stack = min(self.fog_stack, max(0, hidden))
-
-    def fog_risk(self, in_turns=0):
-        """Army that could reach us from the fog: concentrated stack + next pops."""
-        r = self.fog_stack
-        fq = self.fq
-        left = in_turns
-        for v in range(len(fq) - 1, 1, -1):
-            if left <= 0:
-                break
-            k = min(fq[v], left)
-            r += k * (v - 1)
-            left -= k
-        return r
-
-    def enemy_gather_ratio(self):
-        h = self.enemy_kind_hist
-        g = sum(1 for k in h if k == "foggather")
-        c = sum(1 for k in h if k == "fogcap")
-        return g / (g + c) if g + c else 0.5
 
     def update_tracks(self):
         """Track big enemy stacks through fog (position, army, last seen turn)."""
@@ -546,16 +418,11 @@ class Bot:
                 if d <= (t - tr[2]) + 1 and (bd is None or d < bd):
                     bd, best = d, k
             if best is None:
-                tracks.append([e, A[e], t, 0])
+                tracks.append([e, A[e], t])
                 used.add(len(tracks) - 1)
-                if A[e] >= 0.87 * (self.fog_stack + 1):
-                    self.fog_stack = 0
-                else:
-                    self.fog_stack = max(0, self.fog_stack - A[e])
             else:
-                tracks[best] = [e, A[e], t, 0]
+                tracks[best] = [e, A[e], t]
                 used.add(best)
-        fog_move = self.last_enemy_kind not in ("vis", "build")
         keep = []
         for k, tr in enumerate(tracks):
             if k in used:
@@ -567,8 +434,6 @@ class Bot:
             if T[c] != 0 and T[c] != 5 and O[c] == 1 and t - tr[2] <= 1:
                 # we took its cell: it fought us; keep only if a big enemy cell is adjacent
                 continue
-            if fog_move:
-                tr[3] += 1
             keep.append(tr)
         self.tracks = keep[:8]
 
@@ -1163,20 +1028,10 @@ class Bot:
         cap = self.best_capture(need_g)
         if cap:
             options.append(cap + ("capture",))
-        defence = A[g]
-        if P["ring_w"] > 0:
-            R = P["ring_r"]
-            dg = self.dist_g
-            ring = 0
-            for i in range(self.n):
-                if O[i] == 1 and 0 < dg[i] <= R and A[i] > 1:
-                    ring += A[i] - 1
-            defence += int(P["ring_w"] * ring)
-        self.defence = defence
-        if defence < need_g:
+        if A[g] < need_g:
             eta = self.threat_eta
             budget = None if eta >= INF else max(1, eta - 1)
-            a, tot = self.gather_move(g, need=need_g - defence, budget=budget)
+            a, tot = self.gather_move(g, need=need_g - A[g], budget=budget)
             if a:
                 urgent = eta <= P["track_threat_dist"]
                 options.append((P["w_garrison_urgent"] if urgent else P["w_garrison"], a, "garrison"))
@@ -1254,8 +1109,8 @@ class Bot:
                     ni = A[i] - int((d - 1) * P["threat_decay"]) + P["threat_margin"]
                     if ni > need:
                         need, eta = ni, d
-        for c, army, ts, adv in self.tracks:
-            d = max(1, self.dist_g[c] - (adv if P["fog_tracks"] else (t - ts)))
+        for c, army, ts in self.tracks:
+            d = max(1, self.dist_g[c] - (t - ts))
             if d <= P["track_threat_dist"]:
                 ni = army + P["threat_margin"]
                 if ni > need:
@@ -1271,11 +1126,6 @@ class Bot:
             else:
                 f = P["garrison_frac_hidden"] * 0.3
             ni = int(hidden * f)
-            if P["fog_model"] > 0:
-                ni = int(P["fog_model"] * self.fog_risk(max(0, wd - 1)))
-                ratio = self.enemy_gather_ratio()
-                if ratio > 0.6:
-                    ni = int(ni * (1 + P["gather_ratio_adj"]))
             if ni > need:
                 need, eta = ni, max(2, wd)
         if P["learned_threat_w"] > 0 and self.turn >= 50:
@@ -1349,12 +1199,9 @@ class Bot:
                         continue
                     dgj = self.dist_g[j]
                     home = max(0, P["home_r"] - dgj) / P["home_r"]
-                    early = t < P["early_expand_until"]
-                    if ai > small_cap and not is_g and not (home > 0 and ai <= 3 * small_cap) and not early:
+                    if ai > small_cap and not is_g and not (home > 0 and ai <= 3 * small_cap):
                         continue
                     v = P["v_neutral"] * (P["bonus_mult"] if bonus else 1.0) + P["v_home"] * home
-                    if t < P["early_expand_until"]:
-                        v += P["early_expand_bonus"]
                     if dc:
                         v -= P["toward_w"] * min(dc[j], 30) / 30.0
                     v -= 0.002 * ai
@@ -1486,12 +1333,6 @@ class Bot:
         de = self.enemy_dist
         structs = self.my_structs
         g = self.general
-        dfront = None
-        tgt = -1
-        if P["castle_front_w"] != 0:
-            tgt = self.belief_target()
-            if tgt >= 0:
-                dfront = self.cand_dist.get(tgt) or self.bfs([tgt])
         best, bv = None, None
         for i in range(self.n):
             if O[i] != 1 or T[i] != 1 or i == g:
@@ -1505,9 +1346,6 @@ class Bot:
             near_home = sum(1 for c in self.my_castles if self.dist_g[c] <= P["castle_home_maxd"])
             if near_home < P["castle_home_n"]:
                 v -= P["castle_home_w"] * max(0, dg - P["castle_home_maxd"])
-            if dfront is not None:
-                # enemy-facing: closer to the likely enemy general than our general is
-                v += P["castle_front_w"] * (self.dist_g[tgt] - dfront[i]) / 10.0
             if bv is None or v > bv:
                 bv, best = v, (i, price)
         return best

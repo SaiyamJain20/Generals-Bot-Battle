@@ -1,0 +1,260 @@
+games {'ResBot': 330, 'nanomena': 330, 'Kubic': 330, 'bca': 330, 'Chig': 330} winrate {'ResBot': np.float64(0.93), 'nanomena': np.float64(0.85), 'Kubic': np.float64(0.8), 'bca': np.float64(0.04), 'Chig': np.float64(0.07)}
+median turns {'ResBot': 440, 'nanomena': 419, 'Kubic': 429, 'bca': 474, 'Chig': 471}
+== 1 ECONOMY (land,army,castles,gen army) median[IQR]; enemy land/army
+50 ResBot 330 land 25 [25-25] army 51 [51-51] cast 0 [0-0] gen 3 [3-3] | opp land 25 [24-25] army 51 [50-51]
+50 nanomena 330 land 25 [25-25] army 51 [51-51] cast 0 [0-0] gen 3 [3-3] | opp land 25 [24-25] army 51 [50-51]
+50 Kubic 330 land 25 [24-25] army 51 [50-51] cast 0 [0-0] gen 3 [3-3] | opp land 25 [24-25] army 51 [50-51]
+50 bca 330 land 24 [24-25] army 50 [49-51] cast 0 [0-0] gen 3 [3-3] | opp land 25 [24-25] army 51 [50-51]
+50 Chig 330 land 25 [24-25] army 51 [50-51] cast 0 [0-0] gen 3 [3-3] | opp land 25 [24-25] army 51 [50-51]
+100 ResBot 330 land 50 [47-53] army 106.5 [98-112.8] cast 0 [0-0] gen 6 [5-8] | opp land 48 [45-52] army 103 [95-110]
+100 nanomena 321 land 49 [45-52] army 103 [95-111] cast 0 [0-0] gen 6 [4-7] | opp land 49 [46-53] army 106 [98-113]
+100 Kubic 325 land 50 [47-53] army 106 [99-112] cast 0 [0-0] gen 6 [5-8] | opp land 48 [45-52] army 104 [96-110]
+100 bca 329 land 49 [46-52] army 104 [97-112] cast 0 [0-0] gen 6 [4-8] | opp land 49 [46-53] army 105 [97-112]
+100 Chig 328 land 51 [48-54] army 110 [103-116] cast 0 [0-0] gen 6 [4-8] | opp land 51 [48-53.2] army 110 [102.8-115]
+150 ResBot 318 land 61 [58-65] army 147 [135-159] cast 1 [0-1] gen 11 [9-13] | opp land 60 [56-64] army 145 [132-158]
+150 nanomena 312 land 60 [55-65] army 146 [129.8-160] cast 1 [0-1] gen 11 [8-12] | opp land 61 [56-66] army 149 [135-163]
+150 Kubic 316 land 61 [56-65] army 146.5 [132-159] cast 1 [0-1] gen 11 [8-13] | opp land 60 [55-65] army 145 [130-158]
+150 bca 319 land 62 [56.5-67] army 150 [133.5-166] cast 1 [0-1] gen 11 [8-18] | opp land 61 [56-66] army 149 [131.5-164.5]
+150 Chig 323 land 63 [57-67] army 153 [138-169] cast 1 [0-1] gen 11 [9-12] | opp land 62 [58-68] army 152 [135-169]
+200 ResBot 298 land 68 [63-72] army 182 [162.2-204] cast 2 [1-2] gen 12 [8-14] | opp land 67 [62-72] army 182 [164-204]
+200 nanomena 300 land 65 [60-70] army 183 [162.8-204.2] cast 2 [1-2] gen 13 [9-16] | opp land 67 [62-73] army 189 [163-209]
+200 Kubic 285 land 67 [60-71] army 180 [161-200] cast 1 [1-2] gen 13 [9-15] | opp land 67 [62-73] army 184 [163-203]
+200 bca 307 land 68 [62-73] army 188 [163-211] cast 1 [1-2] gen 13 [10-18] | opp land 68 [62-73.5] army 184 [163.5-213.5]
+200 Chig 312 land 70 [64-75] army 193 [170-217] cast 1 [1-2] gen 13 [10-16] | opp land 68 [61-73] army 182.5 [162-209.2]
+300 ResBot 267 land 76 [70-81] army 259 [223-307] cast 3 [2-4] gen 15 [11-21] | opp land 71 [65-77.5] army 240 [201-282]
+300 nanomena 244 land 70 [64.8-76] army 240.5 [206-276.5] cast 3 [2-4] gen 14 [11-20] | opp land 71.5 [65-79] army 234.5 [200-272.2]
+300 Kubic 232 land 71 [66-76] army 243 [213.8-284] cast 3 [2-4] gen 14 [8.8-18] | opp land 73 [67-78] army 240 [212-282.2]
+300 bca 279 land 72 [65-79] army 240 [194.5-303] cast 2 [1-4] gen 14 [10-19] | opp land 72 [66-80] army 254 [211-313]
+300 Chig 276 land 75 [68-81] army 245 [210-301.5] cast 2 [1-3] gen 16 [11-20] | opp land 72.5 [66-79] army 253 [211.8-301.2]
+400 ResBot 192 land 82 [76-89] army 335.5 [280-406] cast 3 [2-4] gen 15.5 [10.8-31.5] | opp land 72 [63-78.2] army 268 [218.8-330]
+400 nanomena 181 land 74 [69-80] army 294 [240-357] cast 3 [2-5] gen 16 [11-23] | opp land 74 [65-82] army 257 [208-333]
+400 Kubic 180 land 76.5 [69-82] army 293 [252-364] cast 3 [2-5] gen 13.5 [9-19] | opp land 74 [67-81] army 260.5 [221.5-338]
+400 bca 238 land 71 [62-77.8] army 251.5 [206.5-353.8] cast 2 [1-4] gen 15 [8-22] | opp land 80 [71-85] army 325.5 [261.2-419]
+400 Chig 221 land 78 [70-85] army 278 [230-349] cast 3 [2-4] gen 15 [8-21] | opp land 76 [69-84] army 321 [250-394]
+500 ResBot 100 land 85.5 [79-92] army 429 [319.2-513.5] cast 4 [3-5] gen 19 [13-30.2] | opp land 73 [65-82] army 289 [241.8-362.5]
+500 nanomena 84 land 77.5 [71.8-84] army 352 [274.5-417] cast 5 [3-7] gen 15 [9-21] | opp land 78 [68.8-89] army 299.5 [245.5-401]
+500 Kubic 107 land 79 [71-86.5] army 336 [274.5-435.5] cast 4 [3-5.5] gen 12 [7.5-19] | opp land 74 [68-83] army 286 [229-383]
+500 bca 131 land 69 [61-80.5] army 312 [223-430.5] cast 2 [1-5] gen 17 [8-26] | opp land 86 [75.5-96] army 444 [305.5-585.5]
+500 Chig 143 land 77 [70-86] army 297 [235.5-383.5] cast 3 [2-4] gen 16 [9-23] | opp land 81 [73-88.5] army 364 [286-482]
+600 ResBot 37 land 86 [77-95] army 518 [360-658] cast 5 [4-9] gen 19 [10-25] | opp land 78 [72-87] army 338 [277-515]
+600 nanomena 41 land 83 [77-91] army 411 [334-643] cast 6 [5-9] gen 18 [13-25] | opp land 80 [72-86] army 388 [271-561]
+600 Kubic 42 land 77 [70.2-86] army 375.5 [279.2-453.5] cast 5 [3-7] gen 16.5 [10-21] | opp land 77 [69-87.5] army 293.5 [235.2-421.2]
+600 bca 48 land 74.5 [63.8-87.5] army 390 [243.8-563] cast 5 [2-7] gen 23 [13-45] | opp land 97.5 [85.8-107.5] army 675 [443.8-815.2]
+600 Chig 66 land 76.5 [69.2-82] army 305 [232.8-382.5] cast 3 [2-5] gen 13 [8-22] | opp land 84 [74.2-90.8] army 404 [311.2-539.8]
+== 2 CASTLES
+ResBot frac with>=1 0.88 >=3 0.48 mean n 2.9
+  castle 1 292 turn 123.5 [121-160.2] price 35 [35-35] d_gen 7 [7-7] d_enemy 6 [4-8] army_in_cell 35 [35-36]
+  castle 2 227 turn 167 [163-208] price 35 [35-35] d_gen 7 [7-8] d_enemy 5 [3-8] army_in_cell 36 [35-37]
+  castle 3 159 turn 213 [209-254.5] price 35 [35-37] d_gen 7 [7-8] d_enemy 6 [4-9] army_in_cell 37 [35-38]
+  lost frac 0.366 lost turn 295 [225.5-368.5] life 74 [29.5-151.5] d_enemy lost 5 [3-7] d_enemy kept 7 [4-9]
+  dgen dist hist {1: 23, 2: 18, 3: 3, 4: 9, 5: 10, 6: 84, 7: 502, 8: 138, 9: 38, 10: 133}
+nanomena frac with>=1 0.91 >=3 0.49 mean n 3.18
+  castle 1 299 turn 123 [121-155.5] price 35 [35-35] d_gen 7 [7-7] d_enemy 7 [5-10] army_in_cell 35 [35-36]
+  castle 2 246 turn 167 [163-211] price 35 [35-35] d_gen 7 [7-8] d_enemy 5 [3-6] army_in_cell 36 [35-38]
+  castle 3 161 turn 211 [179-226] price 35 [35-37] d_gen 7 [7-8] d_enemy 5 [3-9] army_in_cell 37 [36-40]
+  lost frac 0.463 lost turn 381 [276-501.5] life 123 [43-239.5] d_enemy lost 5 [3-7] d_enemy kept 6 [4-9]
+  dgen dist hist {1: 41, 2: 29, 3: 7, 4: 12, 5: 10, 6: 93, 7: 532, 8: 157, 9: 44, 10: 126}
+Kubic frac with>=1 0.88 >=3 0.48 mean n 3.02
+  castle 1 291 turn 125 [121-161] price 35 [35-35] d_gen 7 [7-7] d_enemy 6 [4-8] army_in_cell 35 [35-36.5]
+  castle 2 234 turn 169.5 [163-213] price 35 [35-37] d_gen 7 [7-8] d_enemy 6 [4-9] army_in_cell 36 [35-37]
+  castle 3 158 turn 215 [210-259] price 35 [35-37] d_gen 7 [7-9] d_enemy 6 [4-8] army_in_cell 37 [36-39]
+  lost frac 0.48 lost turn 349 [252-490] life 104 [38-228.5] d_enemy lost 5 [3-8] d_enemy kept 6 [4-9]
+  dgen dist hist {1: 37, 2: 25, 3: 4, 4: 6, 5: 15, 6: 98, 7: 484, 8: 153, 9: 38, 10: 138}
+bca frac with>=1 0.85 >=3 0.4 mean n 2.77
+  castle 1 282 turn 125 [121-163] price 35 [35-35] d_gen 7 [7-7] d_enemy 5 [4-8] army_in_cell 37 [35-38]
+  castle 2 192 turn 165.5 [162-208] price 37 [35-37] d_gen 7 [6-8] d_enemy 6 [4-9] army_in_cell 37 [36-39.2]
+  castle 3 133 turn 208 [179-214] price 37 [35-37] d_gen 8 [7-11] d_enemy 6 [4-9] army_in_cell 38 [37-41]
+  lost frac 0.991 lost turn 431 [302-551] life 224 [100-354] d_enemy lost 6 [4-8] d_enemy kept 6.5 [3.8-8.2]
+  dgen dist hist {1: 42, 2: 8, 3: 10, 4: 12, 5: 27, 6: 125, 7: 361, 8: 111, 9: 38, 10: 179}
+Chig frac with>=1 0.91 >=3 0.48 mean n 2.86
+  castle 1 299 turn 125 [121-158.5] price 35 [35-35] d_gen 7 [7-7] d_enemy 5 [4-7] army_in_cell 36 [35-38]
+  castle 2 231 turn 170 [164-211] price 35 [35-37] d_gen 7 [7-8] d_enemy 5 [3-7] army_in_cell 37 [36-39]
+  castle 3 159 turn 213 [209-260.5] price 37 [35-37] d_gen 7 [7-9] d_enemy 6 [4-9] army_in_cell 39 [37-41]
+  lost frac 0.976 lost turn 437 [304-550] life 216.5 [85-331] d_enemy lost 5 [3-8] d_enemy kept 7 [3.5-8]
+  dgen dist hist {1: 11, 2: 18, 3: 10, 4: 17, 5: 24, 6: 99, 7: 469, 8: 128, 9: 40, 10: 127}
+== 3 STRIKES
+ResBot strikes/game 9.18 games with >=1 0.98
+  turn 325 [221-431] mv0 73 [47-106.8] maxmv 77 [50-115] len 4 [2-8] d0 15 [12-18]
+  mv/ownarmy 0.3 [0.3-0.4] maxmv/enemy_gen 8.2 [4.9-14.7] maxmv/enemy_army 0.4 [0.3-0.4] egen 9 [5-16]
+  capture general 0.087 castle 0.174 land flipped>=5  0.165 flip med 0.0
+  genkill strikes: mv 115 [84.5-156] egen 11 [6-19] turn 437 [346.5-523] n 263 of games won 308
+   mv/egen 0 0.8 5 capg 0.0 flip>=5 0.0
+   mv/egen 0.8 1.2 47 capg 0.02 flip>=5 0.04
+   mv/egen 1.2 2 142 capg 0.11 flip>=5 0.17
+   mv/egen 2 99 2806 capg 0.09 flip>=5 0.17
+nanomena strikes/game 9.65 games with >=1 0.98
+  turn 307 [211-418] mv0 66 [46-93] maxmv 72 [49-104] len 5 [2-10] d0 16 [13-19]
+  mv/ownarmy 0.3 [0.3-0.4] maxmv/enemy_gen 7.7 [4.5-13.9] maxmv/enemy_army 0.3 [0.3-0.4] egen 10 [5-17]
+  capture general 0.072 castle 0.197 land flipped>=5  0.201 flip med 1.0
+  genkill strikes: mv 91 [66-124.2] egen 12 [6-19] turn 388.5 [274.5-481.2] n 228 of games won 280
+   mv/egen 0.8 1.2 43 capg 0.07 flip>=5 0.09
+   mv/egen 1.2 2 114 capg 0.05 flip>=5 0.15
+   mv/egen 2 99 3016 capg 0.07 flip>=5 0.2
+Kubic strikes/game 7.88 games with >=1 0.98
+  turn 296 [189.8-419] mv0 64 [43-91] maxmv 70 [46-101] len 5 [2-10] d0 16 [13-19]
+  mv/ownarmy 0.3 [0.3-0.4] maxmv/enemy_gen 7.4 [4.5-12.9] maxmv/enemy_army 0.3 [0.3-0.4] egen 10 [5-17]
+  capture general 0.065 castle 0.172 land flipped>=5  0.198 flip med 1.0
+  genkill strikes: mv 97.5 [64.5-145.2] egen 10.5 [6-19.8] turn 410.5 [269-515.5] n 170 of games won 265
+   mv/egen 0 0.8 1 capg 0.0 flip>=5 0.0
+   mv/egen 0.8 1.2 40 capg 0.02 flip>=5 0.12
+   mv/egen 1.2 2 98 capg 0.06 flip>=5 0.16
+   mv/egen 2 99 2448 capg 0.07 flip>=5 0.2
+bca strikes/game 9.39 games with >=1 1.0
+  turn 326 [221-429] mv0 67 [44-103] maxmv 73.5 [48-116] len 4 [2-8] d0 18 [14-21]
+  mv/ownarmy 0.3 [0.3-0.4] maxmv/enemy_gen 7.4 [4.4-12.4] maxmv/enemy_army 0.3 [0.3-0.4] egen 10 [6-18]
+  capture general 0.002 castle 0.07 land flipped>=5  0.112 flip med 0.0
+  genkill strikes: mv 68 [50.5-103] egen 8 [4.5-8] turn 226 [157.5-516.5] n 7 of games won 13
+   mv/egen 0.8 1.2 13 capg 0.0 flip>=5 0.0
+   mv/egen 1.2 2 103 capg 0.0 flip>=5 0.05
+   mv/egen 2 99 2977 capg 0.0 flip>=5 0.11
+Chig strikes/game 9.19 games with >=1 0.99
+  turn 320 [219-430] mv0 66 [45-95] maxmv 73 [49-105] len 5 [2-9] d0 17 [14-20]
+  mv/ownarmy 0.3 [0.3-0.4] maxmv/enemy_gen 7.7 [4.5-13] maxmv/enemy_army 0.3 [0.3-0.4] egen 10 [5-17]
+  capture general 0.005 castle 0.119 land flipped>=5  0.163 flip med 1.0
+  genkill strikes: mv 76.5 [48.8-107] egen 8.5 [6-23.5] turn 233.5 [176.8-301.2] n 16 of games won 23
+   mv/egen 0.8 1.2 6 capg 0.0 flip>=5 0.0
+   mv/egen 1.2 2 68 capg 0.01 flip>=5 0.21
+   mv/egen 2 99 2950 capg 0.01 flip>=5 0.16
+== 4 DEFENSE events (enemy stack>=X within 6 of general)
+ResBot X 30 n 465 per game 1.41 gather 0.29 attack 0.36 pass 0.0 other 0.34 | lost<=30 0.049 gen/stack 0.2 [0.1-0.4] gen+r3/stack 0.9 [0.6-1.5] gen 12 [5-23] own/en 1 [0.9-1.2] gen/en 0.1 [0-0.1] gen10-gen 5 [-8-6] dist 6 [6-6]
+    gar3/stack 0 0.5 74 lost 0.068
+    gar3/stack 0.5 1 174 lost 0.08
+    gar3/stack 1 2 164 lost 0.024
+    gar3/stack 2 99 53 lost 0.0
+ResBot X 60 n 198 per game 0.6 gather 0.31 attack 0.37 pass 0.0 other 0.32 | lost<=30 0.04 gen/stack 0.2 [0.1-0.3] gen+r3/stack 0.8 [0.4-1.2] gen 14 [6-32] own/en 1 [0.9-1.2] gen/en 0 [0-0.1] gen10-gen 5 [-12-6] dist 6 [6-6]
+    gar3/stack 0 0.5 62 lost 0.048
+    gar3/stack 0.5 1 61 lost 0.066
+    gar3/stack 1 2 66 lost 0.015
+    gar3/stack 2 99 9 lost 0.0
+nanomena X 30 n 529 per game 1.6 gather 0.34 attack 0.36 pass 0.0 other 0.3 | lost<=30 0.11 gen/stack 0.2 [0.1-0.3] gen+r3/stack 0.9 [0.5-1.3] gen 12 [7-19] own/en 0.9 [0.8-1] gen/en 0 [0-0.1] gen10-gen 5 [-7-6] dist 6 [6-6]
+    gar3/stack 0 0.5 112 lost 0.205
+    gar3/stack 0.5 1 206 lost 0.121
+    gar3/stack 1 2 172 lost 0.047
+    gar3/stack 2 99 39 lost 0.051
+nanomena X 60 n 255 per game 0.77 gather 0.36 attack 0.35 pass 0.0 other 0.29 | lost<=30 0.165 gen/stack 0.1 [0.1-0.2] gen+r3/stack 0.7 [0.4-1.1] gen 14 [7-24] own/en 0.9 [0.8-1] gen/en 0 [0-0.1] gen10-gen 5 [-10.5-6] dist 6 [6-6]
+    gar3/stack 0 0.5 88 lost 0.227
+    gar3/stack 0.5 1 87 lost 0.195
+    gar3/stack 1 2 69 lost 0.072
+    gar3/stack 2 99 11 lost 0.0
+Kubic X 30 n 524 per game 1.59 gather 0.33 attack 0.36 pass 0.0 other 0.31 | lost<=30 0.132 gen/stack 0.2 [0.1-0.3] gen+r3/stack 0.8 [0.5-1.2] gen 11 [6-17] own/en 0.9 [0.8-1] gen/en 0 [0-0.1] gen10-gen 5 [-7-6] dist 6 [6-6]
+    gar3/stack 0 0.5 116 lost 0.259
+    gar3/stack 0.5 1 220 lost 0.141
+    gar3/stack 1 2 163 lost 0.037
+    gar3/stack 2 99 25 lost 0.08
+Kubic X 60 n 216 per game 0.65 gather 0.34 attack 0.35 pass 0.0 other 0.31 | lost<=30 0.199 gen/stack 0.1 [0.1-0.2] gen+r3/stack 0.6 [0.4-1] gen 12 [6-22] own/en 0.9 [0.8-1] gen/en 0 [0-0.1] gen10-gen 5 [-10-6] dist 6 [6-6]
+    gar3/stack 0 0.5 91 lost 0.264
+    gar3/stack 0.5 1 76 lost 0.197
+    gar3/stack 1 2 46 lost 0.087
+bca X 30 n 1459 per game 4.42 gather 0.49 attack 0.25 pass 0.0 other 0.25 | lost<=30 0.302 gen/stack 0.2 [0.1-0.5] gen+r3/stack 1.2 [0.7-1.7] gen 16 [8-36] own/en 0.8 [0.6-0.9] gen/en 0.1 [0-0.1] gen10-gen 5 [-17-6] dist 6 [6-6]
+    gar3/stack 0 0.5 239 lost 0.536
+    gar3/stack 0.5 1 327 lost 0.443
+    gar3/stack 1 2 649 lost 0.185
+    gar3/stack 2 99 244 lost 0.197
+bca X 60 n 878 per game 2.66 gather 0.49 attack 0.25 pass 0.0 other 0.25 | lost<=30 0.354 gen/stack 0.2 [0.1-0.5] gen+r3/stack 1.1 [0.6-1.5] gen 20 [9-46.8] own/en 0.7 [0.6-0.8] gen/en 0.1 [0-0.1] gen10-gen 5 [-22-6] dist 6 [6-6]
+    gar3/stack 0 0.5 188 lost 0.58
+    gar3/stack 0.5 1 188 lost 0.559
+    gar3/stack 1 2 413 lost 0.201
+    gar3/stack 2 99 89 lost 0.157
+Chig X 30 n 1160 per game 3.52 gather 0.41 attack 0.32 pass 0.0 other 0.27 | lost<=30 0.323 gen/stack 0.2 [0.1-0.4] gen+r3/stack 0.9 [0.6-1.3] gen 13 [6-24] own/en 0.8 [0.7-0.9] gen/en 0 [0-0.1] gen10-gen 5 [-10-6] dist 6 [6-6]
+    gar3/stack 0 0.5 236 lost 0.449
+    gar3/stack 0.5 1 440 lost 0.409
+    gar3/stack 1 2 389 lost 0.17
+    gar3/stack 2 99 95 lost 0.242
+Chig X 60 n 663 per game 2.01 gather 0.42 attack 0.32 pass 0.0 other 0.25 | lost<=30 0.392 gen/stack 0.2 [0.1-0.3] gen+r3/stack 0.8 [0.4-1.2] gen 16 [7-29.5] own/en 0.8 [0.7-0.9] gen/en 0 [0-0.1] gen10-gen 5 [-13-6] dist 6 [6-6]
+    gar3/stack 0 0.5 200 lost 0.47
+    gar3/stack 0.5 1 228 lost 0.513
+    gar3/stack 1 2 204 lost 0.211
+    gar3/stack 2 99 31 lost 0.194
+== 5 BONUS: move class fractions in 10 ticks after each bonus
+ResBot 50 {'enemy': 0.0, 'neutral': 0.69, 'own': 0.31}
+ResBot 100 {'enemy': 0.01, 'neutral': 0.19, 'own': 0.8}
+ResBot 200 {'build': 0.01, 'enemy': 0.04, 'neutral': 0.02, 'own': 0.92}
+ResBot 300 {'build': 0.01, 'enemy': 0.08, 'neutral': 0.01, 'own': 0.9, 'pass': 0.0}
+ResBot 400 {'build': 0.01, 'enemy': 0.1, 'neutral': 0.01, 'own': 0.88}
+nanomena 50 {'enemy': 0.0, 'neutral': 0.44, 'own': 0.56}
+nanomena 100 {'enemy': 0.01, 'neutral': 0.11, 'own': 0.88}
+nanomena 200 {'build': 0.01, 'enemy': 0.04, 'neutral': 0.02, 'own': 0.93}
+nanomena 300 {'build': 0.01, 'enemy': 0.08, 'neutral': 0.01, 'own': 0.89}
+nanomena 400 {'build': 0.01, 'enemy': 0.14, 'neutral': 0.01, 'own': 0.84}
+Kubic 50 {'enemy': 0.0, 'neutral': 0.68, 'own': 0.32}
+Kubic 100 {'enemy': 0.01, 'neutral': 0.15, 'own': 0.84}
+Kubic 200 {'build': 0.01, 'enemy': 0.04, 'neutral': 0.01, 'own': 0.94}
+Kubic 300 {'build': 0.02, 'enemy': 0.09, 'neutral': 0.01, 'own': 0.89}
+Kubic 400 {'build': 0.01, 'enemy': 0.12, 'neutral': 0.01, 'own': 0.86}
+bca 50 {'enemy': 0.0, 'neutral': 0.75, 'own': 0.24, 'pass': 0.0}
+bca 100 {'enemy': 0.0, 'neutral': 0.13, 'own': 0.87, 'pass': 0.0}
+bca 200 {'build': 0.02, 'enemy': 0.04, 'neutral': 0.0, 'own': 0.94, 'pass': 0.0}
+bca 300 {'build': 0.01, 'enemy': 0.06, 'neutral': 0.01, 'own': 0.92}
+bca 400 {'build': 0.0, 'enemy': 0.09, 'neutral': 0.0, 'own': 0.91, 'pass': 0.0}
+Chig 50 {'neutral': 0.85, 'own': 0.15}
+Chig 100 {'enemy': 0.0, 'neutral': 0.1, 'own': 0.9}
+Chig 200 {'build': 0.01, 'enemy': 0.03, 'neutral': 0.0, 'own': 0.95}
+Chig 300 {'build': 0.01, 'enemy': 0.07, 'neutral': 0.01, 'own': 0.91, 'pass': 0.0}
+Chig 400 {'build': 0.0, 'enemy': 0.1, 'neutral': 0.01, 'own': 0.89, 'pass': 0.0}
+== 6 DECISIVE
+ResBot wins 308 win turns 446 [349.8-532.5] frac win <800 0.981 frac >=1200 0.0 loss turns 293 [207-382.5]
+   T-100 winner: land ratio 1.1 [1-1.3] army ratio 1.2 [1.1-1.3] gen 12 [6-24] egen 10 [6-17] win land 77 [68-85] opp land 67.5 [59-75]
+   T-50 winner: land ratio 1.2 [1.1-1.4] army ratio 1.4 [1.2-1.5] gen 15 [8-28] egen 9.5 [5-19] win land 80 [73.2-87] opp land 67 [59-74]
+   T-0 winner: land ratio 149 [138-161] army ratio 461 [350-599] gen 17 [12-31] egen 40.5 [15.2-75] win land 149 [138-161] opp land 0 [0-0]
+   T-50 as loser: land ratio 1 [0.9-1.1] army ratio 0.9 [0.8-1] gen 7 [3-12.5] egen 8.5 [4.2-11.8]
+   P(win|land lead@100) 0.96 n 185  P(win|no lead) 0.9 | army lead 0.95 0.9
+   P(win|land lead@200) 0.95 n 153  P(win|no lead) 0.93 | army lead 0.98 0.9
+   P(win|land lead@300) 0.98 n 158  P(win|no lead) 0.93 | army lead 0.99 0.88
+nanomena wins 280 win turns 404 [291.8-494] frac win <800 0.979 frac >=1200 0.0 loss turns 478 [362-586]
+   T-100 winner: land ratio 1 [0.9-1.1] army ratio 1.1 [1-1.2] gen 11 [5-18] egen 10 [5-15] win land 68 [59-77] opp land 68 [58-76]
+   T-50 winner: land ratio 1 [0.9-1.2] army ratio 1.2 [1-1.4] gen 12 [6-18] egen 9 [5-15] win land 71 [63-80] opp land 68 [58-75]
+   T-0 winner: land ratio 140 [130-154] army ratio 402.5 [316.5-516.8] gen 14 [11-19] egen 21 [8-41.8] win land 140 [130-154] opp land 0 [0-0]
+   T-50 as loser: land ratio 0.9 [0.7-1] army ratio 0.8 [0.7-1] gen 10 [5-15.2] egen 13.5 [7.8-24]
+   P(win|land lead@100) 0.91 n 170  P(win|no lead) 0.79 | army lead 0.91 0.78
+   P(win|land lead@200) 0.86 n 120  P(win|no lead) 0.83 | army lead 0.87 0.82
+   P(win|land lead@300) 0.89 n 115  P(win|no lead) 0.78 | army lead 0.89 0.75
+Kubic wins 265 win turns 431 [284-530] frac win <800 0.974 frac >=1200 0.0 loss turns 396 [201-529]
+   T-100 winner: land ratio 1 [0.9-1.2] army ratio 1.1 [1-1.3] gen 8 [5-14] egen 9 [5-15.8] win land 70 [60-78.8] opp land 66 [57-73]
+   T-50 winner: land ratio 1.1 [1-1.3] army ratio 1.3 [1.1-1.5] gen 10 [5-16] egen 9 [4-16] win land 73.5 [64-82] opp land 67 [58-74]
+   T-0 winner: land ratio 143 [130-154] army ratio 417 [325-543.2] gen 14 [11.2-20] egen 19 [9-35] win land 143 [130-154] opp land 0 [0-0]
+   T-50 as loser: land ratio 0.9 [0.8-1] army ratio 0.8 [0.7-1] gen 7 [4-13] egen 10.5 [5.8-17.2]
+   P(win|land lead@100) 0.91 n 174  P(win|no lead) 0.69 | army lead 0.9 0.7
+   P(win|land lead@200) 0.86 n 134  P(win|no lead) 0.79 | army lead 0.89 0.75
+   P(win|land lead@300) 0.87 n 100  P(win|no lead) 0.79 | army lead 0.92 0.73
+bca wins 13 win turns 203 [155-513] frac win <800 0.923 frac >=1200 0.0 loss turns 478 [392-542]
+   T-100 winner: land ratio 1 [1-1.1] army ratio 1 [1-1.1] gen 8 [3.8-12] egen 6 [3.8-7.5] win land 44 [29.2-64] opp land 44.5 [29.5-51.2]
+   T-50 winner: land ratio 1.1 [1-1.4] army ratio 1.3 [1-1.5] gen 8 [5-13] egen 6.5 [4-8.8] win land 63.5 [48.8-70] opp land 51.5 [47.8-54]
+   T-0 winner: land ratio 125 [117-131.2] army ratio 305 [284-375.8] gen 13 [12-16.8] egen 16 [5.5-30.8] win land 125 [117-131.2] opp land 0 [0-0]
+   T-50 as loser: land ratio 0.8 [0.7-0.9] army ratio 0.7 [0.6-0.8] gen 12 [6-25.2] egen 12 [6.8-21]
+   P(win|land lead@100) 0.04 n 80  P(win|no lead) 0.04 | army lead 0.04 0.04
+   P(win|land lead@200) 0.03 n 144  P(win|no lead) 0.02 | army lead 0.04 0.02
+   P(win|land lead@300) 0.01 n 135  P(win|no lead) 0.01 | army lead 0.03 0.01
+Chig wins 23 win turns 280 [197.5-419] frac win <800 1.0 frac >=1200 0.0 loss turns 483 [382.5-578]
+   T-100 winner: land ratio 1.1 [1-1.2] army ratio 1 [1-1.3] gen 9 [5-17] egen 8 [3.5-10] win land 61 [51.5-74.5] opp land 54 [47.5-63.5]
+   T-50 winner: land ratio 1.1 [1-1.4] army ratio 1.2 [1-1.5] gen 12 [8-15.5] egen 4 [3-9] win land 67 [62-79] opp land 56 [48.5-63.5]
+   T-0 winner: land ratio 132 [118-141.5] army ratio 323 [224-406] gen 11 [10-17.5] egen 14 [8.5-35] win land 132 [118-141.5] opp land 0 [0-0]
+   T-50 as loser: land ratio 0.9 [0.8-1.1] army ratio 0.8 [0.7-0.9] gen 11 [7-21] egen 13 [6-20]
+   P(win|land lead@100) 0.1 n 145  P(win|no lead) 0.04 | army lead 0.1 0.04
+   P(win|land lead@200) 0.07 n 170  P(win|no lead) 0.04 | army lead 0.1 0.01
+   P(win|land lead@300) 0.03 n 157  P(win|no lead) 0.03 | army lead 0.05 0.01
+== 7 MOVES by phase (per 100 ticks): pass, split, build fraction
+ResBot ph 0 pass 0.036 split/move 0.013 build/1000 0.0
+ResBot ph 100 pass 0.0 split/move 0.01 build/1000 14.6
+ResBot ph 200 pass 0.001 split/move 0.016 build/1000 11.9
+ResBot ph 300 pass 0.0 split/move 0.015 build/1000 4.6
+ResBot ph 500 pass 0.0 split/move 0.015 build/1000 1.9
+nanomena ph 0 pass 0.061 split/move 0.035 build/1000 1.2
+nanomena ph 100 pass 0.0 split/move 0.009 build/1000 14.9
+nanomena ph 200 pass 0.0 split/move 0.012 build/1000 12.0
+nanomena ph 300 pass 0.0 split/move 0.014 build/1000 6.1
+nanomena ph 500 pass 0.0 split/move 0.017 build/1000 3.4
+Kubic ph 0 pass 0.031 split/move 0.074 build/1000 0.0
+Kubic ph 100 pass 0.0 split/move 0.011 build/1000 14.0
+Kubic ph 200 pass 0.0 split/move 0.022 build/1000 13.9
+Kubic ph 300 pass 0.001 split/move 0.029 build/1000 6.5
+Kubic ph 500 pass 0.0 split/move 0.028 build/1000 2.4
+bca ph 0 pass 0.245 split/move 0.008 build/1000 0.0
+bca ph 100 pass 0.001 split/move 0.004 build/1000 14.4
+bca ph 200 pass 0.0 split/move 0.004 build/1000 12.4
+bca ph 300 pass 0.0 split/move 0.007 build/1000 3.1
+bca ph 500 pass 0.003 split/move 0.007 build/1000 0.2
+Chig ph 0 pass 0.043 split/move 0.002 build/1000 0.0
+Chig ph 100 pass 0.0 split/move 0.004 build/1000 14.2
+Chig ph 200 pass 0.002 split/move 0.006 build/1000 11.8
+Chig ph 300 pass 0.004 split/move 0.006 build/1000 3.7
+Chig ph 500 pass 0.0 split/move 0.006 build/1000 0.9

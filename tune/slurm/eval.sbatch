@@ -1,20 +1,20 @@
 #!/bin/bash
-# CMA-ES tuning job on Ada (guest account: see CLAUDE.md rules).
-# usage: sbatch --job-name=<name> tune/slurm/tune.sbatch <run-name> <hours> <map-base> <opp1> [opp2 ...]
-#SBATCH -A research
-#SBATCH --qos=low
+# Generic evaluation job on Ada: runs tools/abpool.py with the given arguments.
+# usage: sbatch --job-name=bb-eval-<tag> tune/slurm/eval.sbatch <tag> <abpool args...>
+#SBATCH -A irel
+#SBATCH --qos=normal
 #SBATCH -p u22
 #SBATCH -n 1
-#SBATCH -c 10
+#SBATCH -c 16
 #SBATCH --mem=24G
-#SBATCH --time=14:00:00
+#SBATCH --time=04:00:00
 #SBATCH -o /home2/$USER/botbattle-saiyam/logs/%x-%j.out
 set -euo pipefail
-RUN="$1"; HOURS="$2"; MAPBASE="$3"; shift 3
+TAG="$1"; shift
 H=/home2/$USER/botbattle-saiyam
 S=/scratch/$USER/botbattle-saiyam
 [ -n "$S" ] && [ -n "$H" ] || exit 1
-mkdir -p "$S/bin" "$S/cache" "$S/tmp" "$S/runs"
+mkdir -p "$S/bin" "$S/cache" "$S/tmp" "$H/results/eval"
 export PIP_CACHE_DIR="$S/cache/pip" XDG_CACHE_HOME="$S/cache" UV_CACHE_DIR="$S/cache/uv" \
        UV_PYTHON_INSTALL_DIR="$S/uvpy" JAX_COMPILATION_CACHE_DIR="$S/cache/jax" \
        MPLCONFIGDIR="$S/cache/mpl" TMPDIR="$S/tmp"
@@ -29,18 +29,8 @@ fi
 if ! "$S/venv/bin/python" -c "import torch" 2>/dev/null; then
   "$S/bin/uv" pip install -q --python "$S/venv/bin/python" torch --index-url https://download.pytorch.org/whl/cpu
 fi
-# fresh copy of the code for this run
-CODE="$S/code-$RUN"
+CODE="$S/code-eval-$TAG"
 mkdir -p "$CODE"
 cp -r "$H/code/." "$CODE/"
 cd "$CODE"
-mkdir -p "$H/results/$RUN"
-( while true; do sleep 300; cp -f runs/"$RUN"/*.json* "$H/results/$RUN/" 2>/dev/null || true; done ) &
-SYNC=$!
-START_ARG=""
-[ -f "runs/start_$RUN.json" ] && START_ARG="--start runs/start_$RUN.json"
-"$S/venv/bin/python" tune/cma_tune.py --name "$RUN" --bot "${TUNE_BOT:-bots/versions/tune_base2.py}" $START_ARG \
-  --sigma "${SIGMA:-0.15}" --opps "$@" --games "${GAMES:-12}" --popsize "${POP:-16}" --workers "${SLURM_CPUS_PER_TASK:-10}" \
-  --hours "$HOURS" --map-base "$MAPBASE" ${EXTRA_ARGS:-} || true
-cp -f runs/"$RUN"/*.json* "$H/results/$RUN/" 2>/dev/null || true
-kill $SYNC || true
+"$S/venv/bin/python" tools/abpool.py "$@" | tee "$H/results/eval/$TAG.txt"

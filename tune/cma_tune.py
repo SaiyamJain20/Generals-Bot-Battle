@@ -63,15 +63,16 @@ SPACE = {
     "feed_min": (2, 20, "int"),
     "v_near_home": (0.0, 5.0, "float"),
     "fortress_turn": (650, 790, "int"),
+    "learned_threat_w": (0.0, 1.2, "float"),
 }
 
 
 def decode(x, base):
     p = dict(base)
     for (k, (lo, hi, kind)), v in zip(SPACE.items(), x):
-        v = min(1.0, max(0.0, v))
+        v = min(1.0, max(0.0, float(v)))
         val = lo + v * (hi - lo)
-        p[k] = int(round(val)) if kind == "int" else round(val, 4)
+        p[k] = int(round(val)) if kind == "int" else round(float(val), 4)
     return p
 
 
