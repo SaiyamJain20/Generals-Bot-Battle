@@ -124,6 +124,7 @@ PARAMS = {
     "castle_g_walk": 8,
     "castle_g_walk_w": 1.5,
     "castle_stack_price": 37,
+    "attack_ratio": 0.0,
     "castle_front_w": 0.0,
     "ring_r": 2,
     "ring_w": 0.0,
@@ -1784,6 +1785,11 @@ class Bot:
                         cyc.update({"mode": "march", "purpose": "castle_g", "stack": g,
                                     "site": site[0], "price": site[1], "turn": t})
                         return self.cycle_move(need_g)
+                # only strike when ahead (replay rule: winners attack at 1.2-1.4x army)
+                if (P["attack_ratio"] > 0 and self.egen < 0 and t < P["aggro_turn"]
+                        and self.my_army < P["attack_ratio"] * self.opp_army):
+                    self.cyc = None
+                    return None
                 # launch half (or all but the garrison) of the general's stack
                 tgt = self.choose_target(g)
                 send_half = A[g] // 2
