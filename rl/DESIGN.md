@@ -113,7 +113,14 @@ the safe submission; this track only replaces it if it beats it under the gates 
 - Throughput target: about 2-4 games/s on 12 laptop cores (the heuristic is 5-10 ms/move), i.e. 7-14k games
   or ~3-5M decisions per hour. That is enough for a policy this size. Ada CPUs would be 5-8x more (needs user approval).
 
-## 7. Evaluation and gates (paired seats, fresh maps 1800-1999, zero forfeits)
+## 7. Evaluation and gates (paired seats, zero forfeits)
+- Map slices (data/maps_fresh.jsonl).
+  - Already used for decisions (do not use for final claims): 0-49, 400-449, 500-549, 1000-1049, 1100-1129,
+    1200-1229, 1500-1549, 1700-1749 (F2 selection) and 1800-1849 (F2 confirmation).
+  - Interim RL checkpoint evals: 1550-1699.
+  - Final comparison: 1850-1949.
+  - Last unbiased check: 1950-1999 (touch once).
+- Baseline is F2, the main session's final heuristic: bots/versions/F2.py.
 - Gate 1: >= 0.53 vs tune_base12g over >= 400 games, and not worse than -0.03 vs any of t1c, zoo_mixed, rusher.
 - Gate 2: the full opponent matrix (heuristics, zoo, BC clones, external bots) >= the heuristic's matrix on
   pooled score and on worst-case opponent.
