@@ -1,0 +1,4 @@
+{"bot": "c1_it299.json", "pooled": 0.6883, "n": 300, "errors": 0, "F2.py": 0.57, "t1c.py": 0.6, "bc_resbot96.py": 0.6, "bc_nanomena96.py": 0.7, "bc_kubic96.py": 0.68, "hunter.py": 0.98}
+{"bot": "c2_it289.json", "pooled": 0.6717, "n": 300, "errors": 0, "F2.py": 0.41, "t1c.py": 0.57, "bc_resbot96.py": 0.58, "bc_nanomena96.py": 0.76, "bc_kubic96.py": 0.72, "hunter.py": 0.99}
+{"bot": "c3_it339.json", "pooled": 0.69, "n": 300, "errors": 0, "F2.py": 0.51, "t1c.py": 0.75, "bc_resbot96.py": 0.58, "bc_nanomena96.py": 0.66, "bc_kubic96.py": 0.68, "hunter.py": 0.96}
+{"bot": "F2.py", "pooled": 0.67, "n": 300, "errors": 0, "F2.py": 0.5, "t1c.py": 0.52, "bc_resbot96.py": 0.66, "bc_nanomena96.py": 0.7, "bc_kubic96.py": 0.64, "hunter.py": 1.0}

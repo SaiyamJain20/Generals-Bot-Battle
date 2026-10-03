@@ -1,0 +1,3 @@
+rl/final/ro_a2_avg.py pooled 0.7893 +- 0.048 {'ext_sentinel10.py': 0.75, 'ext_hvn.py': 0.775, 'ext_juraj35.py': 0.85, 'ext_superbot.py': 0.95, 'ext_boss.py': 0.9, 'ext_sentinel.py': 0.85, 'ext_bca.py': 0.45}
+rl/final/ro_a2_p2avg.py pooled 0.8339 +- 0.044 {'ext_sentinel10.py': 0.925, 'ext_hvn.py': 0.875, 'ext_juraj35.py': 0.875, 'ext_superbot.py': 0.95, 'ext_boss.py': 0.9, 'ext_sentinel.py': 0.875, 'ext_bca.py': 0.438}
+bots/versions/F2.py pooled 0.8464 +- 0.042 {'ext_sentinel10.py': 0.775, 'ext_hvn.py': 0.95, 'ext_juraj35.py': 0.85, 'ext_superbot.py': 0.975, 'ext_boss.py': 0.95, 'ext_sentinel.py': 0.95, 'ext_bca.py': 0.475}

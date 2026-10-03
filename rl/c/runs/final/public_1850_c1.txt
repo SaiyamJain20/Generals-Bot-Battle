@@ -1,0 +1,1 @@
+rl/c/runs/ck/c1_final.py pooled 0.8339 +- 0.044 {'ext_sentinel10.py': 0.725, 'ext_hvn.py': 0.863, 'ext_juraj35.py': 0.875, 'ext_superbot.py': 0.975, 'ext_boss.py': 0.95, 'ext_sentinel.py': 0.95, 'ext_bca.py': 0.5}
