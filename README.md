@@ -346,7 +346,8 @@ better strikes (sweep), fewer blunders (deathtouch guard) and the RL-tuned aggre
 | Same, 2× slowdown, vs the ResBot clone (4 games) | 0 timeouts; worst move 22 ms, first move ≤ 513 ms |
 | Unit tests (`pytest tests/`) | engine parity with the pinned JAX engine, rules, accounting, tactics (incl. 2 deathtouch-guard tests), robustness: all pass |
 | Built file (`tools/build_submission.py` → `check_submission.py`) | 92.5 KB, stdlib imports only, no banned calls, header filled, 4 games without forfeit |
-| **Official organizer evaluator** (`evaluate.py validate` + `match` in the `codebot-python:1` Docker sandbox; official 150 ms / 1200-turn limits; 1 CPU; no network) | validate passes. **16 official games, both seats, 0 faults.** Results: starter 3/3, t1c 2–2, own copy 0–1, and 8/8 vs hunter, rusher, expander, zoo flash / mixed / castler, and deathtouch-turtle ×2. Worst move **7.3 ms**, first move ≤ 75 ms. |
+| **Official organizer evaluator** (`evaluate.py validate` + `match` in the `codebot-python:1` Docker sandbox; official 150 ms / 1200-turn limits; 1 CPU; no network) | Final file `saiyam_f2.py` (sha256 `1af7c87d…df83`): **1-hour official-format run on 3 Oct**. That's a full official `tournament` (8 entrants, league + playoffs) plus a long-game match loop: **223 games, 0 faults**. Worst move 13.6 ms, first move ≤ 80 ms. 2 games reached turn 800+ (deathtouch win at 801; simultaneous-capture draw at 829). League 1st; final lost to F0. Head-to-head: F0 0.415 (59 games), c_a2es3 0.53, t1c 0.555, mirror 0.58. |
+| (earlier runs) | validate passes. **16 official games, both seats, 0 faults.** Results: starter 3/3, t1c 2–2, own copy 0–1, and 8/8 vs hunter, rusher, expander, zoo flash / mixed / castler, and deathtouch-turtle ×2. Worst move **7.3 ms**, first move ≤ 75 ms. |
 
 ### 7.4 Why F2 and not the safer base
 - F2 is the best on both untouched slices (+0.04 and +0.06).
