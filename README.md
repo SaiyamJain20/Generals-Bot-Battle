@@ -17,6 +17,10 @@ Everything it needs is inside one file of about 92 KB.
 >   That figure was 32–48 % this morning.
 > - To produce the file you upload, run `tools/build_submission.py` with your participant ID and bot name
 >   (see [How to build the submission](#1-how-to-build-the-submission)).
+> - It passes the **official evaluator** (`evaluate.py validate`) and plays in the official Docker sandbox
+>   with a worst move of about 5.6 ms (limit 150 ms).
+> - An overnight RL deep-dive (PPO over options, GRPO, ES, CMA-ES) did not produce a bot that beats F2 under a
+>   fair test; see [7.5](#75-the-overnight-rl-deep-dive-23-oct-did-proper-rl-beat-f2).
 
 ---
 
@@ -343,6 +347,77 @@ better strikes (sweep), fewer blunders (deathtouch guard) and the RL-tuned aggre
   - modulator without its garrison cut: 0.739.
   - Both landed in between, so there was no free lunch.
 
+### 7.5 The overnight RL deep-dive (2–3 Oct): did proper RL beat F2?
+Short answer: **no, not under a fair test.** F2 stays the submission. Two sessions ran RL tracks in parallel.
+Every result below is a paired, deterministic evaluation on fresh maps that no training or earlier choice
+had touched.
+
+**The constraint that shapes everything.**
+- The organizers confirmed one core (Sapphire Rapids), Python 3.12 and the standard library only, with no
+  packages, model files or separate assets.
+- A pure neural policy small enough for 150 ms of pure Python (a 12×1 conv student, 30 KB, 11.6 ms per move)
+  plays at only **0.17** against our heuristic, and PPO fine-tuning made it worse (0.21 → 0.08–0.19).
+- So the RL here learns the *decision layer* on top of the tested heuristic.
+
+**What was tried.** All of these are deployable as numbers inside the single file:
+
+| Track | Method | Scale |
+|---|---|---|
+| A (other session) | **RO-PPO**: a learned residual policy rescores the heuristic's candidate options every turn (24 global + 8 option features, 16-unit hidden layer). PPO + GAE, potential-based shaping annealed to 0, semi-MDP discounting, KL to the heuristic, PFSP league with self snapshots. Weights averaged over late iterations. | ~75k–90k games per run on Ada |
+| C1 | **GRPO/PPO** over the context modulator: Gaussian exploration in logit space, group-relative advantages on the engine outcome (the "verifiable reward"), PPO-clip, KL anchor to F2, league incl. KSolmann | 696 iterations, ~67k games |
+| C3/C3b | Same as C1, with a 12-unit MLP added to the modulator | ~1,000 iterations (laptop) |
+| E1 | OpenAI-ES (antithetic, common random numbers) over the extended modulator (+ build group + 3 opponent-style features) | 58 generations |
+| es5 | Rerun of the CMA-ES that produced F2, now with a stall watchdog (es4 had hung after generation 8) | 7.5 h without a stall |
+
+**Correctness checks:**
+- The learner gradients match finite differences.
+- The bot and the learner compute the identical policy.
+- With zero new weights, every candidate plays move-for-move like F2.
+- Our simulator matches the **official evaluator** observation-for-observation: 1,564 of 1,564 observations
+  identical over 3 full games.
+
+**Selection** (fresh maps 1650–1699, 13 opponents × 100 games each):
+- (a) = 8 heuristic opponents; (b) = 4 neural BC clones + KSolmann.
+
+| Bot | (a) heuristic | (b) neural |
+|---|---|---|
+| F2 | 0.771 | 0.556 |
+| C1 | 0.781 | 0.581 |
+| C3b | 0.778 | 0.543 |
+| es5 | 0.764 | 0.580 |
+| E1 | 0.742 | 0.560 |
+| RO `ro_a2_avg` | 0.824 | 0.504 |
+
+**Joint final** (fresh maps 1850–1949, untouched until this point).
+
+The rule, chosen by the participant:
+- **decide on stdlib-feasible heuristic opponents**, because real entries must also run in pure Python at 150 ms;
+- use the neural clones and KSolmann only as a guardrail: no worse than −0.05 vs F2.
+
+| Bot | In-house heuristic bots (13 × 100 games) | Independent public heuristic bots (6 × 40 games) | Neural guardrail (5 × 100 games) | vs F2 head-to-head |
+|---|---|---|---|---|
+| **F2** | 0.804 | **0.908** | **0.562** | – |
+| RO `ro_a2_p2avg` | **0.844** | 0.900 | 0.479 (fails: −0.083) | 0.64 |
+| RO `ro_a2_avg` | 0.845 | 0.846 | 0.475 (fails: −0.087) | 0.58 |
+| C1 | 0.802 | 0.890 | 0.569 | 0.485 |
+
+**The lesson.** RO-PPO learned a real gain against the bot family it trained with: F2, t1c and the zoo.
+- It beat F2 head-to-head 0.64.
+- That gain **did not transfer** to independent public bots, and it cost 0.08 against strong learned play.
+- The modulator RL runs (GRPO, ES, CMA-ES) all landed within ±0.02 of F2.
+- So F2, the earlier ES-tuned version, remains the most robust bot we have.
+
+**KSolmann's transformer.**
+- It's a 3M-parameter AverageJoe-style model, trained with JAX PPO on GPUs, and the strongest bot we found.
+- F2 scores **0.27–0.37** against it (100-game slices).
+- It cannot be entered under the stdlib, 150 ms rule.
+
+All RL code is in the worktree `.claude/worktrees/rl` (branch `rl-track`):
+- Track A: `rl/hier/`, `rl/final/`;
+- Track C: `rl/c/`;
+- the design notes: `rl/DESIGN.md`;
+- the full log: `rl/board.md`.
+
 ---
 
 ## 8. Rule compliance
@@ -452,5 +527,9 @@ How our setup works:
 See `OPEN_QUESTIONS.md`. The ones that matter for submitting:
 - **Participant ID and bot name.** They are needed for the file name `participant_id.py` and the header. Pass them
   to `build_submission.py`.
-- **The event's exact adapter / starter kit.** The bot follows the observation format in the rules PDF (§8.1) and
-  also accepts common key aliases and flat grids.
+- ~~The event's exact adapter / starter kit.~~ **Resolved:**
+  - The organizers' evaluator (`evaluator.zip`) is unpacked in `.claude/worktrees/rl/rl/c/evaluator/` and its
+    Docker image `codebot-python:1` is built locally.
+  - Our simulator reproduces its observations exactly (`rl/c/official_parity.py`).
+  - The submission passes `evaluate.py validate`, and its official-sandbox games are listed in 7.3.
+  - The real deadline from the kit's README is **3 Oct 2026, 2:00 PM IST**.
