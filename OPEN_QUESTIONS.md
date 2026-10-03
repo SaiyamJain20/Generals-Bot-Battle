@@ -4,9 +4,9 @@ Update this file as answers arrive. Resolved items move to the bottom.
 
 | # | Question | Who / how | Status |
 |---|---|---|---|
-| 1 | **Starter kit**: where are the event evaluator, `starter.py`, `pass_bot.py` and the dict adapter that calls `act(observation)`? Exact grid format (nested lists `grid[r][c]` or flat)? Exact keys? Are values plain `int`? | Ask organizer | OPEN |
-| 3 | **Event image**: exact Python 3.12.x patch, how the 150 ms is measured (includes observation delivery), is stderr allowed/visible, rough CPU speed? | Ask organizer | OPEN |
-| 4 | **Timing**: exact H0 and deadline (with timezone), submission link | Ask organizer | OPEN |
+| 1 | **Starter kit**: where are the event evaluator, `starter.py`, `pass_bot.py` and the dict adapter that calls `act(observation)`? Exact grid format (nested lists `grid[r][c]` or flat)? Exact keys? Are values plain `int`? | Ask organizer | RESOLVED 3 Oct: official evaluator.zip (worker.py adapter, examples/starter.py, pass_bot.py); nested lists of rows; our sim matches it exactly (rl/c/official_parity.py) |
+| 3 | **Event image**: exact Python 3.12.x patch, how the 150 ms is measured (includes observation delivery), is stderr allowed/visible, rough CPU speed? | Ask organizer | RESOLVED 3 Oct: Docker python:3.12-slim (pinned digest), 1 CPU (Sapphire Rapids per organisers), 150 ms wall incl. transport, stderr = diagnostics only |
+| 4 | **Timing**: exact H0 and deadline (with timezone), submission link | Ask organizer | RESOLVED: submission closes 3 Oct 2026 2:00 PM IST (kit README) |
 | 5 | **Identity**: participant ID (file must be named `participant_id.py`) and bot name for the header | You | OPEN |
 | 6 | Any strong/RL bot we can play against before the deadline? (Assumed no; public generals.bot replays stand in) | Ask organizer | OPEN |
 
