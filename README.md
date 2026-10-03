@@ -336,6 +336,7 @@ better strikes (sweep), fewer blunders (deathtouch guard) and the RL-tuned aggre
 | Same, 2× slowdown, vs the ResBot clone (4 games) | 0 timeouts; worst move 22 ms, first move ≤ 513 ms |
 | Unit tests (`pytest tests/`) | engine parity with the pinned JAX engine, rules, accounting, tactics (incl. 2 deathtouch-guard tests), robustness: all pass |
 | Built file (`tools/build_submission.py` → `check_submission.py`) | 92.5 KB, stdlib imports only, no banned calls, header filled, 4 games without forfeit |
+| **Official organizer evaluator** (`evaluate.py validate` + `match` in the `codebot-python:1` Docker sandbox; official 150 ms / 1200-turn limits; 1 CPU; no network) | validate passes. 7 official games, both seats: vs starter ×2, t1c ×4, own copy ×1. **0 faults**; worst move **7.3 ms**, first move ≤ 75 ms. |
 
 ### 7.4 Why F2 and not the safer base
 - F2 is the best on both untouched slices (+0.04 and +0.06).
@@ -423,6 +424,14 @@ All RL code is in the worktree `.claude/worktrees/rl` (branch `rl-track`):
 ## 8. Rule compliance
 
 Checked by `tools/check_submission.py`, and by a separate audit in `agents_shared/auditor.md`.
+
+**No copied open-source bot code.** The organizers said open bots are not allowed. We ran a verbatim-copy
+audit (`tools/copy_audit.py submission/<id>.py vendor/ext`) over all 1,104 third-party source files we downloaded (14 repos).
+- Method: comments and whitespace removed, and every shared run of at least 25 consecutive tokens reported.
+- Result: the longest overlap is 31 tokens, the engine-defined direction table
+  `DIRS = ((-1, 0), (1, 0), (0, -1), (0, 1))`.
+- Nothing else is shared. The ideas taken from other bots are credited in the header, and the code was
+  written from scratch.
 
 **The file itself:**
 - One UTF-8 `.py` file of about 92 KB.
