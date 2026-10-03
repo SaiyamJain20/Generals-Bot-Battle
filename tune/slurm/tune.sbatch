@@ -19,6 +19,9 @@ mkdir -p "$S/bin" "$S/cache" "$S/tmp" "$S/runs"
 export PIP_CACHE_DIR="$S/cache/pip" XDG_CACHE_HOME="$S/cache" UV_CACHE_DIR="$S/cache/uv" \
        UV_PYTHON_INSTALL_DIR="$S/uvpy" JAX_COMPILATION_CACHE_DIR="$S/cache/jax" \
        MPLCONFIGDIR="$S/cache/mpl" TMPDIR="$S/tmp"
+# single-threaded BLAS: es4/es5 hung in numpy eigh (pycma covariance decomposition) inside a
+# process that keeps forking pool workers; multithreaded OpenBLAS + fork is the classic cause
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 if [ ! -x "$S/bin/uv" ]; then
   curl -LsSf https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-unknown-linux-gnu.tar.gz \
     | tar -xz -C "$S/bin" --strip-components=1
