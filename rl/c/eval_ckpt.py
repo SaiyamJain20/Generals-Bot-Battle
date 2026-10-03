@@ -41,6 +41,7 @@ def main():
     ap.add_argument("--pairs", type=int, default=25)
     ap.add_argument("--workers", type=int, default=0)
     ap.add_argument("--opps", nargs="*", default=None)
+    ap.add_argument("--out", default=None, help="also write the result lines to <out>/eval.jsonl")
     args = ap.parse_args()
     opps = [os.path.join(ROOT, o) for o in (args.opps or MATRIX)]
     opps = [o for o in opps if os.path.exists(o)]
@@ -69,6 +70,10 @@ def main():
         out = {"bot": label, "pooled": round(sum(allv) / max(1, len(allv)), 4), "n": len(allv), "errors": errs,
                **{k: round(sum(v) / len(v), 3) for k, v in per.items()}}
         print(json.dumps(out), flush=True)
+        if args.out:
+            os.makedirs(args.out, exist_ok=True)
+            with open(os.path.join(args.out, "eval.jsonl"), "a") as f:
+                f.write(json.dumps(out) + "\n")
 
 
 if __name__ == "__main__":
