@@ -31,6 +31,7 @@ def main():
              + glob.glob(os.path.join(ROOT, "rl", "students", "*.pt"))
              + glob.glob(os.path.join(ROOT, "rl", "students", "ada", "*.pt"))
              + glob.glob(os.path.join(ROOT, "rl", "bots", "*.py"))
+             + glob.glob(os.path.join(ROOT, "rl", "final", "*.py"))
              + glob.glob(os.path.join(ROOT, "arena", "*.py")) + [os.path.join(ROOT, "tools", "abmulti.py")])
     for f in files:
         cp(os.path.relpath(f, ROOT), os.path.relpath(f, ROOT))
