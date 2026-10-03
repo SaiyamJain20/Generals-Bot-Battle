@@ -42,6 +42,16 @@ Everything it needs is inside one file of about 92 KB.
 
 ## 1. How to build the submission
 
+**Quickest path, one command.** It builds the file, runs our checks, runs the official organizer evaluator's
+`validate`, plays one official-sandbox game, and prints the SHA-256 to keep as your receipt:
+
+```bash
+cd ~/Desktop/Bot-Battle && tools/final_build.sh <your_participant_id> "<your bot name>"
+#  -> submission/<your_participant_id>.py  (upload this file)
+```
+
+The same steps by hand:
+
 ```bash
 cd ~/Desktop/Bot-Battle
 export PYTHONPATH=vendor/generals-bots:.
