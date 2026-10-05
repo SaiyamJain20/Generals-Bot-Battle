@@ -14,7 +14,8 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
-sys.path.insert(0, os.path.join(HERE, "evaluator", "evaluator"))
+EVAL_DIR = os.environ.get("EVALUATOR_DIR", os.path.join(ROOT, "evaluator"))  # unzip the organizers' evaluator.zip here
+sys.path.insert(0, EVAL_DIR)
 import engine as OFF  # noqa: E402  (official adapter; puts its vendored engine on sys.path)
 sys.path.insert(0, ROOT)
 from sim import engine as E  # noqa: E402

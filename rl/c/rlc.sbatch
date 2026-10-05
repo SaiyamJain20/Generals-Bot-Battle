@@ -7,7 +7,7 @@
 #SBATCH -c 10
 #SBATCH --mem=28G
 #SBATCH --time=08:00:00
-#SBATCH -o /home2/$USER/botbattle-saiyam/logs/%x-%j.out
+#SBATCH -o /home2/%u/botbattle-saiyam/logs/%x-%j.out
 set -euo pipefail
 TAG="$1"; shift
 H=/home2/$USER/botbattle-saiyam

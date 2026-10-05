@@ -11,7 +11,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=40G
 #SBATCH --time=03:00:00
-#SBATCH -o /home2/$USER/botbattle-saiyam/logs/%x-%j.out
+#SBATCH -o /home2/%u/botbattle-saiyam/logs/%x-%j.out
 set -euo pipefail
 TAG="$1"; shift
 H=/home2/$USER/botbattle-saiyam

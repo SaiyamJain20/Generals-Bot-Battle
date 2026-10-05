@@ -1,7 +1,7 @@
 #!/bin/bash
 # Final submission build + verification in one command.
 #   tools/final_build.sh <participant_id> "<bot name>"
-# 1) bakes runs/final_params.json (F2) into bots/participant.py -> submission/<participant_id>.py
+# 1) bakes agents_shared/final_params.json (F2) into bots/participant.py -> submission/<participant_id>.py
 #    (fills the header, DEBUG=False, runs tools/check_submission.py)
 # 2) official organizer evaluator: validate + one full official-sandbox game vs the kit's starter bot
 # 3) prints size and SHA-256 (keep it as the upload receipt)
@@ -13,12 +13,13 @@ cd "$(dirname "$0")/.."
 PY=.venv312/bin/python
 export PYTHONPATH=vendor/generals-bots:.
 OUT="submission/$ID.py"
-"$PY" tools/build_submission.py --params runs/final_params.json --id "$ID" --name "$NAME" --out "$OUT"
-EVAL=.claude/worktrees/rl/rl/c/evaluator/evaluator/evaluate.py
+"$PY" tools/build_submission.py --params "${PARAMS_JSON:-agents_shared/final_params.json}" --id "$ID" --name "$NAME" --out "$OUT"
+EVAL_DIR="${EVALUATOR_DIR:-evaluator}"   # the organizers' evaluator.zip unzipped at the repo root
+EVAL="$EVAL_DIR/evaluate.py"
 if [ -f "$EVAL" ] && docker image inspect codebot-python:1 >/dev/null 2>&1; then
   "$PY" "$EVAL" validate "$OUT"
   RUN=".scratch/official_final_$(date +%H%M%S)"
-  "$PY" "$EVAL" match "$OUT" .claude/worktrees/rl/rl/c/evaluator/evaluator/examples/starter.py \
+  "$PY" "$EVAL" match "$OUT" "$EVAL_DIR/examples/starter.py" \
       --seed 2026 --cpu 12 --out "$RUN" | tail -8
   echo "official game written to $RUN"
 else

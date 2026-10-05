@@ -1,273 +1,268 @@
-# Bot-Battle: our Code Bot entry
+# Generals Bot Battle
 
-A single-file, standard-library-only Python bot for the **Code Bot** hackathon. The game is the
-generals.bot competition ruleset: fog of war, castle building, deathtouch from turn 800, and a draw at turn 1200.
+A single-file, **standard-library-only Python 3.12** bot for **Code Bot** (Fuzzy Dynamics, 2–3 October 2026), a
+20-hour bot-programming hackathon. It is played on the [generals.bot](https://www.generals.bot/rules) competition
+ruleset: fog of war, castle building, "deathtouch" from turn 800, and a draw at turn 1200.
 
-The bot is a hand-written strategy whose numbers were tuned by self-play. It is wrapped in a small learned
-"context modulator", tuned by evolution strategies, the black-box RL method we used for the 5-hour RL session.
-Everything it needs is inside one file of about 92 KB.
+**Result: reached the knockout stage (top 16); eliminated in the round of 16.**
 
-> **TL;DR**
-> - The submission is built from `bots/participant.py` plus `runs/final_params.json`
->   (a copy is at `agents_shared/final_params.json`). This parameter set is called **F2**.
-> - On maps never used for any decision, it scores **0.752 and 0.754** (two independent slices of 1,000 games).
->   - This morning's best scored 0.665.
->   - The same bot without the RL modulator scores 0.71 / 0.69.
-> - Against the strongest opponents we have, the behaviour-cloned top Marathon bots, it now wins **55–69 %** of games.
->   That figure was 32–48 % this morning.
-> - To produce the file you upload, run `tools/build_submission.py` with your participant ID and bot name
->   (see [How to build the submission](#1-how-to-build-the-submission)).
-> - It passes the **official evaluator** (`evaluate.py validate`) and plays in the official Docker sandbox
->   with a worst move of about 5.6 ms (limit 150 ms).
-> - An overnight RL deep-dive (PPO over options, GRPO, ES, CMA-ES) did not produce a bot that beats F2 under a
->   fair test; see [7.5](#75-the-overnight-rl-deep-dive-23-oct-did-proper-rl-beat-f2).
+The bot is a hand-written strategy. Every rule of the engine is simulated exactly inside it, and its ~100 numbers
+were tuned by self-play. On top of that sits a small learned **context modulator** (56 weights) trained with
+evolution strategies. An overnight deep-dive into "proper" RL (PPO over options, GRPO, ES, CMA-ES) did not beat it
+under a fair test. All of that work is in this repo too.
+
+> **At a glance**
+> - **Final bot:** [`submission/saiyam_f2.py`](submission/saiyam_f2.py), a 92.7 KB file whose only imports are
+>   `collections`, `gc`, `heapq`, `math` and `time`.
+> - **Held-out maps:** it scores **0.752 / 0.754** on maps never used for any decision (two slices of 1,000 games
+>   vs 10 opponents).
+> - **Strongest opponents:** 0.55–0.69 against neural clones of the top generals.bot ladder bots, and 0.91 pooled
+>   against 6 independent public heuristic bots.
+> - **Official evaluator:** 223 games in the organizers' Docker sandbox with 0 faults. The worst move took 13.6 ms
+>   (limit 150 ms).
 
 ---
 
 ## Contents
-1. [How to build the submission](#1-how-to-build-the-submission)
-2. [The game in two minutes (and the engine facts that matter)](#2-the-game-in-two-minutes)
-3. [How the bot thinks](#3-how-the-bot-thinks)
-4. [How it was tuned (including the RL session)](#4-how-it-was-tuned)
+1. [Quick start](#1-quick-start)
+2. [The competition and the game](#2-the-competition-and-the-game)
+3. [How the bot works](#3-how-the-bot-works)
+4. [How it was tuned](#4-how-it-was-tuned)
 5. [Who it was tested against](#5-who-it-was-tested-against)
-6. [What we tried: kept and rejected](#6-what-we-tried-kept-and-rejected)
-7. [Final results](#7-final-results)
-8. [Rule compliance](#8-rule-compliance)
-9. [Known weaknesses and next ideas](#9-known-weaknesses-and-next-ideas)
-10. [Repository map](#10-repository-map)
-11. [Working on the Ada cluster](#11-working-on-the-ada-cluster)
-12. [Still open](#12-still-open)
+6. [Experiments: what we kept and what we dropped](#6-experiments-what-we-kept-and-what-we-dropped)
+7. [Results](#7-results)
+8. [The RL deep-dive: did "proper" RL beat it?](#8-the-rl-deep-dive-did-proper-rl-beat-it)
+9. [Tournament outcome and lessons](#9-tournament-outcome-and-lessons)
+10. [Rule compliance](#10-rule-compliance)
+11. [Repository layout](#11-repository-layout)
+12. [Running experiments on a SLURM cluster](#12-running-experiments-on-a-slurm-cluster)
+13. [Credits](#13-credits)
 
 ---
 
-## 1. How to build the submission
+## 1. Quick start
 
-**Quickest path, one command.** It builds the file, runs our checks, runs the official organizer evaluator's
-`validate`, plays one official-sandbox game, and prints the SHA-256 to keep as your receipt:
+### 1.1 Just use the bot (no setup)
+[`submission/saiyam_f2.py`](submission/saiyam_f2.py) is self-contained. It exposes `act(observation)` and returns
+`[kind, row, col, direction, split]`:
 
-```bash
-cd ~/Desktop/Bot-Battle && tools/final_build.sh <your_participant_id> "<your bot name>"
-#  -> submission/<your_participant_id>.py  (upload this file)
+```python
+import importlib.util
+spec = importlib.util.spec_from_file_location("bot", "submission/saiyam_f2.py")
+bot = importlib.util.module_from_spec(spec); spec.loader.exec_module(bot)
+
+action = bot.act(observation)   # observation: the event's dict (section 2.2); module globals keep game memory
 ```
 
-The same steps by hand:
+One module instance plays one game, because it keeps memory in module globals. Load a fresh copy for each game.
+
+> This published file differs from the file actually submitted only in its header's participant ID.
+> The code and parameters are identical.
+
+### 1.2 Development setup
+Requirements: Linux or macOS, Python 3.12 and git. Docker is needed only for the organizers' evaluator.
 
 ```bash
-cd ~/Desktop/Bot-Battle
+git clone https://github.com/SaiyamJain20/Generals-Bot-Battle.git && cd Generals-Bot-Battle
+./setup.sh                        # venv + deps + pinned engine + map pools  (MAPS=2000 FRESH=200 ./setup.sh is faster)
 export PYTHONPATH=vendor/generals-bots:.
-
-# 1) bake the final parameters into one file, fill the header, run all checks
-.venv312/bin/python tools/build_submission.py \
-    --params runs/final_params.json \
-    --id <your_participant_id> --name "<your bot name>"
-#  -> writes submission/<your_participant_id>.py and prints its SHA-256
-
-# 2) (optional) re-run the checks by hand
-.venv312/bin/python tools/check_submission.py submission/<your_participant_id>.py --games 4
-```
-
-`build_submission.py` does four things:
-1. Writes the tuned values straight into the `PARAMS` literal, so there is no runtime update.
-2. Forces `DEBUG = False`.
-3. Fills `[PARTICIPANT_ID]` and `[BOT_NAME]` in the header.
-4. Runs `check_submission.py`. That script checks:
-   - UTF-8 and ≤ 1 MiB;
-   - standard-library imports only;
-   - no `print`, `open`, `exec`, network or threads;
-   - a top-level `act()`;
-   - the placeholders are filled;
-   - a few full games with no forfeits.
-
-**Before uploading, please check two things:**
-- **The header's AI-assistance paragraph.** It says the participant reviewed the code and can explain it. Make
-  sure that is true, or edit the sentence.
-- **The SHA-256.** Keep the printed hash as your receipt.
-
-Other useful commands:
-
-```bash
-# unit + parity tests (exact engine replica vs. the pinned JAX engine, tactics, robustness)
 .venv312/bin/python -m pytest -q tests/
-
-# play A vs B, both slots, many workers (in-process, fast)
-.venv312/bin/python tools/abmulti.py 40 6 --bots bots/versions/F2.py --opps bots/opp/hunter.py bots/versions/t1c.py
-
-# realistic timing: both bots in separate processes on ONE core, 150 ms limit, 3x CPU slowdown
-.venv312/bin/python arena/subproc.py bots/versions/F2.py bots/versions/t1c.py --games 8 --slowdown 3
-
-# catastrophe gate: every simple/zoo/public bot, fails on any forfeit or a score below 0.85
-.venv312/bin/python tools/gate.py bots/versions/F2.py --games 30 --workers 6
 ```
+
+`setup.sh` does four things:
+1. Creates `.venv312` and installs `requirements.txt`.
+2. Clones the pinned engine [`strakam/generals-bots@13db8f69`](https://github.com/strakam/generals-bots/tree/13db8f69a422380ea184d2f4ca262a38866c5fc6)
+   into `vendor/generals-bots`.
+3. Generates the training maps (`data/maps.jsonl`, seeds 0–19,999).
+4. Generates the held-out maps (`data/maps_fresh.jsonl`, seeds 900,000+) with the engine's own generator.
+
+To also install torch for behaviour cloning and the RL learners, run `LEARN=1 ./setup.sh`.
+
+**Not included in the repo,** because they're large, third-party or derived:
+- **Public bots** (`vendor/ext/`). Their wrappers are `bots/opp/ext_*.py`. `tune/slurm/setup_ext.sh` fetches
+  Sentinel and bca; the full source list is in `agents_shared/bot-scout.md`.
+- **Neural clone weights** (`data/bc/*.pt`). The `bots/opp/bc_*.py` wrappers need them; train them with
+  `learn/` (section 5).
+- **Downloaded replays.**
+- **The organizers' evaluator kit.**
+
+Everything else, including the simulator, tuner, tests and all bot versions, works out of the box.
+
+### 1.3 Everyday commands
+All commands assume `export PYTHONPATH=vendor/generals-bots:.` and use `.venv312/bin/python`.
+
+| Task | Command |
+|---|---|
+| Play A vs B, both seats, paired maps | `python tools/abmulti.py 40 6 --bots bots/versions/F2.py --opps bots/opp/hunter.py bots/versions/t1c.py` |
+| Same, on held-out maps | `ARENA_MAPS=data/maps_fresh.jsonl python tools/abmulti.py 40 6 --bots ... --opps ... --offset 100` |
+| Realistic timing: separate processes on one core, 150 ms limit, CPU slowdown | `python arena/subproc.py bots/versions/F2.py bots/versions/t1c.py --games 8 --slowdown 3` |
+| Catastrophe gate: fails on any forfeit or a score < 0.85 | `python tools/gate.py bots/versions/F2.py --games 30 --workers 6` |
+| Trace one game (army and land over time) | `python tools/trace.py bots/versions/F2.py bots/opp/hunter.py 0` |
+| Tune parameters (CMA-ES) | `python tune/cma_tune.py --name myrun --bot bots/participant.py --opps bots/opp/hunter.py:4 ...` |
+| Build a submission from the final params | `tools/final_build.sh <participant_id> "<bot name>"` |
+
+`tools/final_build.sh` does the following:
+1. Bakes `agents_shared/final_params.json` into `bots/participant.py`, forces `DEBUG = False` and fills the header.
+2. Runs `tools/check_submission.py`: size, stdlib-only imports, no banned calls, and a few full games.
+3. If the organizers' evaluator is unzipped at `./evaluator/` and its Docker image is built, runs its `validate`
+   plus one official sandbox game.
+4. Prints the SHA-256.
 
 ---
 
-## 2. The game in two minutes
+## 2. The competition and the game
 
-**Each turn,** each player makes one action:
-- **move** an army to a neighbouring cell, sending either *all but one* or *half*;
-- **build** a castle;
-- **pass**.
+### 2.1 Event rules
+- **Submission:** one UTF-8 Python 3.12 file of at most 1 MiB, standard library only. No packages, model files,
+  assets, network or GPU.
+- **Interface:** the file exposes `act(observation)` and returns five signed 32-bit ints.
+- **Limits:**
+  - 150 ms per move (10 s for the first move, import included);
+  - one shared CPU (Sapphire Rapids);
+  - 2 GiB of memory.
+- **Forfeits:** a timeout, an exception or a malformed return forfeits the game immediately.
+- **Open-source bots:** not allowed as entries. Ideas from them may be used with attribution.
+- **Format:** a league (every pair plays two games, seats swapped), then knockouts.
 
-**Combat** subtracts armies. A tie keeps the cell for the defender.
+### 2.2 The game in two minutes
+- **Your turn:** **move** an army to a neighbouring cell (sending all but one, or half), **build** a castle, or
+  **pass**.
+- **Combat** subtracts armies. A tie keeps the cell for the defender.
+- **Growth:** generals and castles grow +1 every other turn; every owned cell gets +1 every 50 turns (the "land
+  bonus").
+- **Winning:** capture the enemy general. From turn 800, *any* move onto it wins ("deathtouch"). Turn 1200 is a
+  draw.
+- **Observation:**
+  - `turn`, `height`, `width`, `player_id`;
+  - exact totals: `my_land`, `my_army`, `opp_land`, `opp_army`;
+  - grids `type` (0 fog, 1 plain, 2 mountain, 3 castle, 4 general, 5 structure in fog), `owner` (0, 1 = you,
+    2 = opponent) and `army`.
 
-**Growth:**
-- Generals and castles grow +1 every other turn.
-- Every owned cell gets +1 every 50 turns (the "land bonus").
-
-**Winning:**
-- You win by capturing the enemy general.
-- From turn 800, *any* move onto the enemy general wins ("deathtouch").
-- At turn 1200 the game is a draw.
-
-**Limits (forfeit if broken):** 150 ms per move (10 s for the first move, import included), one shared CPU,
-2 GiB of memory, stdlib Python 3.12, one file of at most 1 MiB. A timeout, an exception or a malformed return
-forfeits the game.
-
-### Engine facts we verified at the pinned commit (`strakam/generals-bots@13db8f69`)
-These are things a casual reading of the rules gets wrong. They drive many of the bot's decisions.
-
+### 2.3 Engine facts that matter (verified at the pinned commit)
 | Fact | Why it matters |
 |---|---|
-| Moves resolve in this order: **chasing** (moving onto the cell the enemy is leaving) → **reinforcing** (moving onto your own cell) → smaller army first → player 0. | Reinforcing a cell beats an attack on it in the same turn. You cannot dodge a chase. |
-| Deathtouch can only be stopped by a **chase from a third tile** onto the attacker's cell, leaving it with ≤ 1 army. Countering from your own general fails. | This is the basis of the deathtouch guard (section 3). |
-| Every mountain is visible from turn 0. **A cell that later turns "structure in fog" is an enemy castle**, even deep in fog. | We know where every enemy castle is. |
-| `opp_army` and `opp_land` are exact every turn. | We can work out every enemy castle build and its exact price. |
-| Castle price = 35 + Σ max(0, 14 − 2d) over the builder's own general and castles. | The price pins the enemy general to a ring of known radius around the new castle. |
-| Map generator: generals are ≥ 17 walking steps apart, and the "room within 7 steps" counts differ by ≤ 5. | This rules out most cells as the enemy general's spawn at turn 0. |
-| Observed turn T: structures grow after odd T; the land bonus comes after T = 49, 99, … | Timing of builds, strikes and captures. |
+| Move order: **chasing** (moving onto the cell the enemy is leaving) → **reinforcing** → smaller army → player 0 | A reinforcement beats an attack in the same turn, and a chase can't be dodged |
+| Deathtouch can only be stopped by a **chase from a third tile** onto the attacker | This is the basis of the bot's deathtouch guard |
+| Mountains are visible from turn 0, so a cell that later turns "structure in fog" **is an enemy castle** | Every enemy castle is located, even deep in fog |
+| `opp_army` and `opp_land` are exact every turn | Every enemy castle build and its exact price can be worked out |
+| Castle price = 35 + Σ max(0, 14 − 2d) over the builder's general and castles | The price pins the enemy general to a ring around the new castle |
+| Generator: generals are ≥ 17 steps apart, and their "room within 7 steps" counts differ by ≤ 5 | Most cells are ruled out as the enemy spawn at turn 0 |
+| Structures grow after odd turns; the land bonus comes after turns 49, 99, … | Timing for builds, strikes and captures |
 
-`sim/engine.py` is a pure-Python replica of these rules. `tests/test_parity.py` checks it against the pinned
-JAX engine, so all of our local games follow the real rules.
+[`sim/engine.py`](sim/engine.py) is an exact pure-Python replica of the engine. It's checked against the JAX engine
+by `tests/test_parity.py`, and against the organizers' evaluator by `rl/c/official_parity.py` (1,564 of 1,564
+observations identical).
 
 ---
 
-## 3. How the bot thinks
+## 3. How the bot works
 
-All of this lives in `bots/participant.py`, about 2,400 lines. Every turn runs the same pipeline:
+Everything is in [`bots/participant.py`](bots/participant.py), about 2,400 lines. Each turn:
 
 ```
-observation ──► parse + memory ──► opponent accounting ──► enemy-general belief
-                                                                 │
-           ┌─────────────────────────────────────────────────────┘
-           ▼
-   win_now ─► deathtouch guard ─► urgent defence ─► intercept ─► opening (T<50) ─► macro options
-                                                                                     │
-                                         one-turn exact safety veto ◄────────────────┘
-                                                     │
-                                          sanitise ─► [kind, row, col, dir, split]
+observation ─► parse + memory ─► exact opponent accounting ─► enemy-general belief
+                                                                     │
+      ┌──────────────────────────────────────────────────────────────┘
+      ▼
+  win now? ─► deathtouch guard ─► urgent defence ─► intercept ─► opening (turn < 50) ─► scored macro options
+                                                                                            │
+                                            one-turn exact safety veto ◄────────────────────┘
+                                                        │
+                                             sanitise ─► [kind, row, col, dir, split]
 ```
 
 ### 3.1 Memory and exact opponent accounting
-- The bot keeps a turn-0 snapshot of the mountains, and for every cell the last type, owner, army and turn seen.
-- From the change in `opp_army` / `opp_land`, it computes every turn whether the enemy built a castle and exactly
-  what it paid.
+- It keeps a turn-0 mountain snapshot, plus the last type, owner, army and turn seen for every cell.
+- From each turn's change in `opp_army` and `opp_land`, it detects every enemy castle build and its exact price.
 - It matches that build to the new "structure in fog" cell.
-- From the price it derives a ring of possible general locations. A remainder of r means distance (14 − r) / 2.
-- This was validated against public replays, with 28 of 28 builds matched.
+- The price gives a ring of possible enemy-general locations. This was validated on public replays: 28 of 28
+  builds matched.
 
 ### 3.2 Where is the enemy general?
-1. **Hard filters at turn 0:** the generator's spawn rules (walking distance ≥ 17; room-within-7 within ±5).
-2. **Updates during the game:**
-   - cells seen without a general are ruled out;
-   - castle-price rings narrow the area;
-   - so do places where enemy armies come out of the fog.
-3. **Ranking:** a small learned spawn prior ranks what is left. It is a 10-weight logistic regression (`PRIOR_W`,
-   `PRIOR_B`), trained on maps from the pinned engine's own generator.
+1. **Turn 0:** filter candidates with the generator's spawn rules.
+2. **Each turn:** prune cells seen without a general, cells outside the castle-price rings, and cells
+   inconsistent with where enemy armies leave the fog.
+3. **Rank what's left** with a 10-weight logistic spawn prior (`PRIOR_W`, `PRIOR_B`), trained on the engine's own
+   map generator.
 
-### 3.3 Options every turn
-The "macro" step scores a handful of options and plays the best:
-- **capture:** take a neutral or enemy cell. Timed toward the land bonus, with an early-expansion bonus until
+### 3.3 Options scored every turn
+- **capture:** take neutral or enemy land, timed around the land bonus, with an early-expansion bonus until
   turn 100.
-- **garrison:** gather army onto the general. The size is set by visible threats, tracked stacks moving in from the
-  fog, and part of the hidden enemy army. The gather budget is the arrival time of the binding threat.
-- **army cycle:**
-  - gather a stack along value-per-move gather trees;
-  - launch half of it at the most likely general, an enemy castle or a nearby threat;
-  - route it stealthily, avoiding cells the enemy can probably see.
-- **kill:** the "sweep" kill check walks the exact path to the enemy general. Our own cells on the way join the
-  stack, and every enemy cell must be beaten. It strikes when the stack arrives with more than the general's army
-  plus a margin.
-- **build** a castle, **scout**, or **home fill** (own every cell near the general for early warning).
-- **intercept:** chase-kill an attacker next to our general or castles.
+- **garrison:** gather army onto the general, sized to visible threats, stacks tracked moving through fog, and
+  part of the hidden enemy army.
+- **army cycle:** gather a stack along value-per-move trees, then launch it at the likely general or an enemy
+  castle. The route is stealthy, avoiding cells the enemy probably sees.
+- **kill (the "sweep" check):** walk the exact path to the enemy general, adding our own cells and beating every
+  enemy one. Strike when the stack arrives with more than the general's army plus a margin.
+- **build, scout, home fill, intercept:** build castles, scout, own all cells near home, and chase-kill
+  attackers next to the general or castles.
 
-### 3.4 The context modulator (the part tuned by RL)
-Each option weight above is multiplied by `exp(w · f)`, clipped to e^±1.5.
-- **Features** (8, all in about [−1, 1]):
+### 3.4 The context modulator (the learned part)
+Every option weight is multiplied by `exp(clip(w·f, ±1.5))`.
+- **Features** (8, each in [−1, 1]):
   - game phase;
-  - our/their army ratio;
+  - army ratio;
   - land ratio;
   - number of enemy castles;
-  - the enemy's gather style;
+  - enemy gather style;
   - whether the enemy general is known;
-  - the biggest tracked threat relative to our general;
+  - the largest tracked threat;
   - a bias.
-- **Weights:** 7 option groups × 8 features = 56, all called `m_<group>_<j>`.
-
-This is how the bot adapts to opponent type and game situation. What the RL session learned is in section 4.3.
+- **Weights:** 7 option groups × 8 features = 56, named `m_<group>_<j>`, trained by evolution strategies
+  (section 4.3).
 
 ### 3.5 Safety layers
-- **One-turn exact resolver:** before any move goes out, it is simulated against every enemy move that could hit
-  our general, using the engine's exact move order. Moves that lose the general are vetoed.
-- **Deathtouch guard (`dt_guard`, from turn 790):**
-  1. an enemy stack next to our general is chased from a third tile with at least equal army;
-  2. a stack two steps away is killed, or the neighbour it would take is reinforced (reinforcing resolves before
-     the attack).
-  - This was added after a real loss at turn 865 that we were winning 1,253 to 895 army.
-- **Endgame fortress:** from turn 696 the bot owns every neighbour of its general and clears enemy cells within
-  2; from 760 it stages a deathtouch strike.
+- **Exact one-turn veto:** each candidate move is resolved against every enemy move that could hit our general,
+  using the engine's move order. Losing moves are rejected.
+- **Deathtouch guard** (from turn 790):
+  - an adjacent enemy stack is chased from a third tile;
+  - a stack two steps away is killed, or the neighbour it would take is reinforced.
+  - This was added after a real loss at turn 865 in a game we led 1,253 to 895 in army.
+- **Endgame fortress:** from turn 696 the bot holds every neighbour of its general; from turn 760 it stages its
+  own deathtouch strike.
 - **Shell:**
   - `act()` never raises; any internal error returns a valid pass;
-  - every value goes through `int()` and a range clamp;
-  - observation keys are read through aliases, and both nested and flat grids are accepted;
+  - every output is cast to `int` and clamped;
+  - observation keys are read through aliases;
   - typical moves take 2–8 ms.
 
 ---
 
 ## 4. How it was tuned
 
-### 4.1 CMA-ES self-play (classic parameter tuning)
-- `tune/cma_tune.py` tunes about 100 numbers: option weights, garrison fractions, launch sizes, castle timing,
-  and so on.
-- Candidates are compared on **paired maps**: the same maps, both slots.
+### 4.1 CMA-ES self-play
+[`tune/cma_tune.py`](tune/cma_tune.py) tunes about 100 numbers: option weights, garrison fractions, launch sizes,
+castle timing and so on.
+- **Fair comparisons:** candidates play paired maps (the same maps, both seats).
 - **Opponent pool:**
-  - fixed opponents, mostly the behaviour-cloned top bots;
-  - PFSP weighting: opponents we lose to count more;
+  - fixed opponents, mostly the neural clones;
+  - PFSP weighting (opponents we lose to count more);
   - self-play against the current mean;
-  - a small league of past snapshots.
-- **Output:** the average of the last 6 means (`mean_avg.json`). It is less noisy than the single best candidate.
-- **Where it ran:** on Ada (24–40 CPUs per job) and on the laptop.
+  - a league of past snapshots.
+- **Output:** `mean_avg.json`, the average of the last 6 means. It's less noisy than the single best candidate.
 
-### 4.2 Map-overfitting check
-- **Setup:** we generated 2,000 *fresh* maps from the pinned generator (`data/maps_fresh.jsonl`). Tuning never uses
-  them.
-- **Result:** the tuned bot scored 0.670 on fresh maps and 0.653 on tuning maps. The bot learned strategy, not
-  maps.
-- **Final selection:** made on fresh-map slices that no earlier decision had used.
+### 4.2 Overfitting check
+We generated 2,000 held-out maps that tuning never sees. The tuned bot scored 0.670 on them and 0.653 on the
+tuning maps, so it learned strategy rather than maps. Every final decision was made on held-out slices no earlier
+decision had used.
 
-### 4.3 The RL session: evolution strategies on the modulator
-- **Method:** black-box RL (ES, run with CMA-ES) over the 56 modulator weights plus one kill-check setting.
-  - Starting point: the tuned bot.
-  - Pool: clone-heavy, plus self-play and league snapshots.
-  - Runs: es2 → es3 → es4, about 3.5 hours of Ada time.
-  - es2 started from the wrong base, and es3 was superseded once the sweep kill check was adopted.
-  - es4 ran 9 generations, then stalled for its last hour; its averaged mean is the final modulator.
-- **Why ES rather than PPO etc.:** a deep network could not run in 150 ms of pure Python. The reports in
-  `agents_shared/rl-research.md` and `agents_shared/vast-research.md` found that ES over a low-dimensional policy
-  is the best RL we can actually deploy here.
-  - We also looked for "Jev's" RL model and found nothing public under that name.
-  - The candidates are AverageJoe (a 15M-parameter net, far too big here), ResBot and quant-eagle.
-- **Key weights learned in es4 (`runs/es4/mean_avg.json`):**
+### 4.3 Evolution strategies on the modulator
+- **Method:** black-box RL with CMA-ES over the 56 modulator weights, starting from the tuned bot, against a
+  clone-heavy pool with self-play and league snapshots.
+- **Why ES:** a deep network can't fit 150 ms of pure Python, so ES over a low-dimensional policy was the best RL
+  we could actually deploy.
+- **What it learned** (`agents_shared/final_params.json`):
 
 | Group | Learned weight | Effect |
 |---|---|---|
-| launch | bias +0.51, +0.26 × enemy castles | ~1.7× more launches, more again vs castle builders |
+| launch | bias +0.51, +0.26 × enemy castles | about 1.7× more launches, more again against castle builders |
 | garrison | bias −0.48, +0.45 × army ratio | thinner garrison, thicker when ahead |
 | kill | bias −0.24 | strikes with a thinner margin |
 | capture | bias −0.35, −0.41 × enemy castles | fewer small captures |
-| scout / home | +0.46…+0.58 × threat / general known | more scouting and home-fill under threat |
+| scout / home | +0.46…+0.58 × threat / general known | more scouting and home fill under threat |
 
-In short: **more aggressive, especially against economy builders.** That is exactly what beats the cloned top bots,
-which out-grow us if the game goes long. The cost is a little robustness against hunter-style bots (section 7).
+In short: **more aggressive, especially against economy builders.** That's worth +0.04–0.06 win rate on held-out
+maps (section 7).
 
 ---
 
@@ -275,17 +270,17 @@ which out-grow us if the game goes long. The cost is a little robustness against
 
 | Group | Bots | Notes |
 |---|---|---|
-| **Behaviour clones of the top Marathon bots** | `bc_resbot96`, `bc_resbot128`, `bc_nanomena96`, `bc_kubic96` | Our strongest opponents. They are ResNet policies (96–128 channels) trained on the Ada GPU from public Marathon replays (up to 3.3k games each, from the 15k we downloaded), with actions inferred from the replays by our exact engine. They need torch, so they are local-only. |
-| Public bots from GitHub | Sentinel / Sentinel v10 (relh), bca (blake-ar, **an RL conv-net**), hvn (hv-nguyeen), juraj34/35, superbot, boss, Human.exe, A9 (C++), doomstack, amin, mybot9 | Wrappers in `bots/opp/ext_*.py`, code in `vendor/ext/` (gitignored). |
-| Hand-written zoo | rusher, hunter, hunter_castles, turtle, zoo_flash / castler / gatherer / sniper / turtle_dt / expander_plus / mixed | Each one probes a style: rush, snipe castles, turtle for deathtouch, and so on. |
-| Our older versions | t1c, c_a2es3, v1, … | Stop regressions; t1c is a good "medium heuristic" stand-in. |
+| Neural clones of top ladder bots | `bc_resbot96`, `bc_resbot128`, `bc_nanomena96`, `bc_kubic96` | ResNet policies (96–128 channels) trained on a GPU from public generals.bot replays, with actions inferred by our exact engine (`learn/`). The strongest opponents we had, apart from KSolmann. |
+| KSolmann's transformer | `ext_ksolmann` | A 3M-parameter AverageJoe-style model trained with PPO for this ruleset. The strongest bot we found; it can't run under the stdlib / 150 ms rule. |
+| Public bots from GitHub | Sentinel and Sentinel v10, bca (an RL conv-net), hvn, juraj34/35, superbot, boss, Human.exe, A9, doomstack, amin, mybot9 | Wrappers in `bots/opp/ext_*.py`; sources in `agents_shared/bot-scout.md` |
+| Hand-written "zoo" | rusher, hunter, turtle, zoo_flash / castler / gatherer / sniper / turtle_dt / expander_plus / mixed | Each one probes a single style |
+| Our older versions | t1c, c_a2es3, F0, … | Regression checks |
 
 ---
 
-## 6. What we tried: kept and rejected
-
-Every change was measured with paired-map A/B tests, usually 400–1,000 games. The full log, with every number,
-is in `agents_shared/ROADMAP.md`.
+## 6. Experiments: what we kept and what we dropped
+Every change was measured with paired-map A/B tests, usually 400–1,000 games. The full log is in
+[`agents_shared/ROADMAP.md`](agents_shared/ROADMAP.md).
 
 **Kept**
 
@@ -295,261 +290,200 @@ is in `agents_shared/ROADMAP.md`.
 | Stealth routing of strikes (`stealth_w` 0.5) | 0.738 → 0.782 |
 | Chase-kill interceptor | 0.738 → 0.753 |
 | Sweep kill check (exact path walk, 10 candidate stacks; idea from Sentinel) | 0.580 → 0.620 |
-| Deathtouch guard | fixes a real class of turn-800+ losses; unit-tested |
-| ES-tuned context modulator (es4) | 0.71 → 0.75 on untouched maps |
+| Deathtouch guard | fixes a real class of turn-800+ losses (unit-tested) |
+| ES-tuned context modulator | 0.71 → 0.75 on held-out maps |
 
-**Rejected** (each tested, then dropped or left off)
+**Dropped**
 
 | Idea | What happened |
 |---|---|
-| Earlier / more castles (start at turn 120–160, castles from the general, castles on the stack) | 0.43 → 0.31 vs clones. Our castles get drained and taken; the tuner keeps castles late. |
-| Keep half the army on castles | 0.53 → 0.48. Replays show top bots drain castles fully too. |
-| Attack only when ahead | 0.56 → 0.42 / 0.09. Launches are what win games. |
-| Bonus-timed enemy captures (the replay rule) | 0.54 → 0.44–0.49 |
-| Spread small stacks after each land bonus | 0.555 → 0.458 |
+| Earlier or more castles | 0.43 → 0.31 vs clones: our castles get drained and taken |
+| Keep half the army on castles | 0.53 → 0.48 |
+| Attack only when ahead | 0.56 → 0.42 / 0.09: launches are what win games |
+| Bonus-timed enemy captures; spreading after each land bonus | 0.54 → 0.44–0.49; 0.555 → 0.458 |
 | Longer early expansion (to turn 130 / 160) | 0.645 → 0.615 / 0.557 |
 | Kill-front gathering, stealth kill paths, kill-margin changes | negative or no effect |
-| Defence escalation (urgent garrison when a big threat is far but known) | neutral (+0.016 / −0.013). It fixed one game but not the average; left off. |
-| A learned threat model (gradient-boosted, trained on replays) | no gain; removed from the file (it was also a 141 KB audit risk) |
+| A learned threat model (gradient boosting on replays) | no gain; removed |
 
-**A lesson from all of this:** the tuned bot sits at a strong local optimum. Moves taken away from attack cycles and
-spent on "economy" kept losing, even though the clones out-grow us economically. That is why the gains came from
-better strikes (sweep), fewer blunders (deathtouch guard) and the RL-tuned aggression.
+**Lesson:** the tuned bot sits at a strong local optimum. Turns moved from attack cycles into "economy" kept
+losing, even though the strongest opponents out-grow us economically. The gains came from better strikes, fewer
+blunders and RL-tuned aggression.
 
 ---
 
-## 7. Final results
+## 7. Results
 
-### 7.1 Untouched fresh maps (100 games per opponent, both slots)
-"Pooled" is the average over all 10 opponents (1,000 games, about ±0.027 at 95 %).
+### 7.1 Held-out maps (100 games per opponent, both seats)
+"Pooled" is the average over 10 opponents: 1,000 games, about ±0.027 at 95 %.
 
-| Bot | Slice | Pooled | ResBot-96 | ResBot-128 | nanomena | Kubic | t1c | sniper | flash | mixed | rusher | hunter |
+| Bot | Map slice | Pooled | ResBot-96 | ResBot-128 | nanomena | Kubic | t1c | sniper | flash | mixed | rusher | hunter |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| this morning's best (c_a2es3) | 1700 | 0.665 | .36 | .32 | .48 | .41 | .72 | .78 | .92 | .87 | .80 | .99 |
-| base, no modulator (F0) | 1700 | 0.713 | .45 | .39 | .57 | .45 | .69 | .89 | .94 | .93 | .84 | .99 |
+| earlier best (c_a2es3) | 1700 | 0.665 | .36 | .32 | .48 | .41 | .72 | .78 | .92 | .87 | .80 | .99 |
+| without modulator (F0) | 1700 | 0.713 | .45 | .39 | .57 | .45 | .69 | .89 | .94 | .93 | .84 | .99 |
 | **final (F2)** | 1700 | **0.752** | **.56** | **.58** | **.66** | **.66** | .57 | .92 | .90 | .94 | .78 | .96 |
-| base, no modulator (F0) | 1800 | 0.692 | .46 | .34 | .46 | .54 | .68 | .84 | .91 | .90 | .84 | .96 |
+| without modulator (F0) | 1800 | 0.692 | .46 | .34 | .46 | .54 | .68 | .84 | .91 | .90 | .84 | .96 |
 | **final (F2)** | 1800 | **0.754** | **.64** | **.55** | **.69** | **.64** | .57 | .89 | .89 | .92 | .86 | .90 |
 
-### 7.2 Public bots (laptop; 40 games each, bca and boss 100; "pooled" is the 40-game run over all 7)
+### 7.2 Public bots (40 games each; bca and boss 100)
 
 | Bot | Sentinel v10 | Sentinel | hvn | juraj35 | superbot | boss | bca (RL) | pooled |
 |---|---|---|---|---|---|---|---|---|
-| base (F0) | .83 | .83 | .68 | .89 | .93 | .93 | .53 | 0.816 |
-| **final (F2)** | .85 | .95 | .78 | .88 | 1.00 | .90 | .44 | 0.821 |
+| F0 | .83 | .83 | .68 | .89 | .93 | .93 | .53 | 0.816 |
+| **F2** | .85 | .95 | .78 | .88 | 1.00 | .90 | .44 | 0.821 |
 
-### 7.3 Safety checks on the final bot
+Against KSolmann's transformer, F2 scores 0.27–0.37 (100-game slices).
+
+### 7.3 Safety checks on the final file
+
 | Check | Result |
 |---|---|
-| Catastrophe gate: 20 simple / zoo / public bots × 30 games (`tools/gate.py`) | **0 forfeits in 600 games.** Worst move 36 ms (laptop under full load). Lowest scores: zoo_gatherer 0.83, hvn / flash / mixed 0.87; all others ≥ 0.93. Gate average 0.953 (base: 0.944). |
-| Realistic runner, 1 shared core, 150 ms limit, 3× CPU slowdown, vs t1c (8 games) | 0 timeouts; worst move **56.6 ms**, worst first move **529 ms** (limit 10 s) |
-| Same, 2× slowdown, vs the ResBot clone (4 games) | 0 timeouts; worst move 22 ms, first move ≤ 513 ms |
-| Unit tests (`pytest tests/`) | engine parity with the pinned JAX engine, rules, accounting, tactics (incl. 2 deathtouch-guard tests), robustness: all pass |
-| Built file (`tools/build_submission.py` → `check_submission.py`) | 92.5 KB, stdlib imports only, no banned calls, header filled, 4 games without forfeit |
-| **Official organizer evaluator** (`evaluate.py validate` + `match` in the `codebot-python:1` Docker sandbox; official 150 ms / 1200-turn limits; 1 CPU; no network) | Final file `saiyam_f2.py` (sha256 `1af7c87d…df83`): **1-hour official-format run on 3 Oct**. That's a full official `tournament` (8 entrants, league + playoffs) plus a long-game match loop: **223 games, 0 faults**. Worst move 13.6 ms, first move ≤ 80 ms. 2 games reached turn 800+ (deathtouch win at 801; simultaneous-capture draw at 829). League 1st; final lost to F0. Head-to-head: F0 0.415 (59 games), c_a2es3 0.53, t1c 0.555, mirror 0.58. |
-| (earlier runs) | validate passes. **16 official games, both seats, 0 faults.** Results: starter 3/3, t1c 2–2, own copy 0–1, and 8/8 vs hunter, rusher, expander, zoo flash / mixed / castler, and deathtouch-turtle ×2. Worst move **7.3 ms**, first move ≤ 75 ms. |
+| **Organizers' evaluator**, 1 hour: the official Docker sandbox at official limits, a full `tournament` run plus a long-game loop | **223 games, 0 faults.** Worst move 13.6 ms; first move ≤ 80 ms. Two games went past turn 800: a deathtouch win at 801 and a simultaneous-capture draw at 829. |
+| Catastrophe gate: 20 simple, zoo and public bots × 30 games | 0 forfeits in 600 games. The lowest score was 0.83 (zoo_gatherer). |
+| Subprocess runner: 1 shared core, 150 ms, 3× CPU slowdown | 0 timeouts. Worst move 56.6 ms; worst first move 529 ms. |
+| Unit tests (`pytest tests/`) | engine parity, rules, accounting, tactics (incl. the deathtouch guard), robustness: all pass |
 
-### 7.4 Why F2 and not the safer base
-- F2 is the best on both untouched slices (+0.04 and +0.06).
-- It has the best worst case: its lowest is 0.44 vs bca, against the base's 0.34 vs the ResBot-128 clone.
-- It is the only version that beats every strong clone.
-- **The price:** it is weaker against t1c (0.57 vs 0.69) and slightly weaker against Hunter and the bca RL bot.
-- We also tested blends:
-  - half-strength modulator: 0.725;
-  - modulator without its garrison cut: 0.739.
-  - Both landed in between, so there was no free lunch.
+### 7.4 Why F2 and not the base bot (F0)
+- **For F2:**
+  - best on both held-out slices (+0.04 and +0.06);
+  - best worst case (0.44 vs bca, against F0's 0.34);
+  - the only version that beats every neural clone.
+- **Against F2:**
+  - weaker vs t1c (0.57 vs 0.69);
+  - F0 beat F2 head-to-head 0.585 in the official-sandbox run (59 games).
+- **Blends:** a half-strength modulator (0.725) and one without its garrison cut (0.739) both landed in between.
 
-### 7.5 The overnight RL deep-dive (2–3 Oct): did proper RL beat F2?
-Short answer: **no, not under a fair test.** F2 stays the submission. Two sessions ran RL tracks in parallel.
-Every result below is a paired, deterministic evaluation on fresh maps that no training or earlier choice
-had touched.
+---
+
+## 8. The RL deep-dive: did "proper" RL beat it?
+Short answer: **no, not under a fair test.** Two Claude Code sessions ran RL tracks in parallel overnight. Every
+result below is a paired, deterministic evaluation on held-out maps.
 
 **The constraint that shapes everything.**
-- The organizers confirmed one core (Sapphire Rapids), Python 3.12 and the standard library only, with no
-  packages, model files or separate assets.
-- A pure neural policy small enough for 150 ms of pure Python (a 12×1 conv student, 30 KB, 11.6 ms per move)
-  plays at only **0.17** against our heuristic, and PPO fine-tuning made it worse (0.21 → 0.08–0.19).
-- So the RL here learns the *decision layer* on top of the tested heuristic.
+- A pure neural policy small enough for 150 ms of pure Python plays at only **0.17** against the heuristic. That
+  was a 12×1 conv student: 30 KB, 11.6 ms per move, using big-integer "lane" convolutions.
+- PPO fine-tuning made it worse (0.21 → 0.08–0.19).
+- So RL was used to learn the **decision layer** on top of the heuristic, which is deployable as plain numbers.
 
-**What was tried.** All of these are deployable as numbers inside the single file:
-
-| Track | Method | Scale |
+| Track | Method | Code |
 |---|---|---|
-| A (other session) | **RO-PPO**: a learned residual policy rescores the heuristic's candidate options every turn (24 global + 8 option features, 16-unit hidden layer). PPO + GAE, potential-based shaping annealed to 0, semi-MDP discounting, KL to the heuristic, PFSP league with self snapshots. Weights averaged over late iterations. | ~75k–90k games per run on Ada |
-| C1 | **GRPO/PPO** over the context modulator: Gaussian exploration in logit space, group-relative advantages on the engine outcome (the "verifiable reward"), PPO-clip, KL anchor to F2, league incl. KSolmann | 696 iterations, ~67k games |
-| C3/C3b | Same as C1, with a 12-unit MLP added to the modulator | ~1,000 iterations (laptop) |
-| E1 | OpenAI-ES (antithetic, common random numbers) over the extended modulator (+ build group + 3 opponent-style features) | 58 generations |
-| es5 | Rerun of the CMA-ES that produced F2, now with a stall watchdog (es4 had hung after generation 8) | 7.5 h without a stall |
+| A | **RO-PPO**: a residual policy rescores the heuristic's candidate options each turn. It has 24 global + 8 option features and a 16-unit hidden layer. Trained with PPO + GAE, potential-based shaping annealed to 0, semi-MDP discounting, KL to the heuristic, and a PFSP league. About 75k–90k games per run. | `rl/hier/`, `rl/final/` |
+| B | Behaviour-cloned conv "students" compiled to pure Python, then PPO | `rl/students/`, `rl/py*.py` |
+| C1 / C3 | **GRPO/PPO** over the modulator: Gaussian logit exploration, group-relative advantages on the engine's outcome, PPO-clip, KL anchor to F2. C3 adds a 12-unit MLP. | `rl/c/grpo.py` |
+| E1 | OpenAI-ES (antithetic, common random numbers) over an extended modulator | `rl/c/es.py` |
+| es5 | Rerun of the CMA-ES that produced F2 | `tune/cma_tune.py` |
 
 **Correctness checks:**
 - The learner gradients match finite differences.
 - The bot and the learner compute the identical policy.
 - With zero new weights, every candidate plays move-for-move like F2.
-- Our simulator matches the **official evaluator** observation-for-observation: 1,564 of 1,564 observations
-  identical over 3 full games.
 
-**Selection** (fresh maps 1650–1699, 13 opponents × 100 games each):
-- (a) = 8 heuristic opponents; (b) = 4 neural BC clones + KSolmann.
+**Joint final** (held-out maps, untouched until then).
+- The decision rule: decide on **stdlib-feasible heuristic opponents**, because real entries must also run in
+  pure Python.
+- Neural opponents are only a guardrail: a candidate may be no more than 0.05 worse than F2 against them.
 
-| Bot | (a) heuristic | (b) neural |
-|---|---|---|
-| F2 | 0.771 | 0.556 |
-| C1 | 0.781 | 0.581 |
-| C3b | 0.778 | 0.543 |
-| es5 | 0.764 | 0.580 |
-| E1 | 0.742 | 0.560 |
-| RO `ro_a2_avg` | 0.824 | 0.504 |
-
-**Joint final** (fresh maps 1850–1949, untouched until this point).
-
-The rule, chosen by the participant:
-- **decide on stdlib-feasible heuristic opponents**, because real entries must also run in pure Python at 150 ms;
-- use the neural clones and KSolmann only as a guardrail: no worse than −0.05 vs F2.
-
-| Bot | In-house heuristic bots (13 × 100 games) | Independent public heuristic bots (6 × 40 games) | Neural guardrail (5 × 100 games) | vs F2 head-to-head |
+| Bot | 13 in-house heuristic bots | 6 independent public bots | Neural guardrail (5 bots) | vs F2 head-to-head |
 |---|---|---|---|---|
 | **F2** | 0.804 | **0.908** | **0.562** | – |
-| RO `ro_a2_p2avg` | **0.844** | 0.900 | 0.479 (fails: −0.083) | 0.64 |
-| RO `ro_a2_avg` | 0.845 | 0.846 | 0.475 (fails: −0.087) | 0.58 |
-| C1 | 0.802 | 0.890 | 0.569 | 0.485 |
+| RO-PPO (`ro_a2_p2avg`) | **0.844** | 0.900 | 0.479 (fails, −0.083) | 0.64 |
+| RO-PPO (`ro_a2_avg`) | 0.845 | 0.846 | 0.475 (fails, −0.087) | 0.58 |
+| GRPO (C1) | 0.802 | 0.890 | 0.569 | 0.485 |
 
-**The lesson.** RO-PPO learned a real gain against the bot family it trained with: F2, t1c and the zoo.
-- It beat F2 head-to-head 0.64.
-- That gain **did not transfer** to independent public bots, and it cost 0.08 against strong learned play.
-- The modulator RL runs (GRPO, ES, CMA-ES) all landed within ±0.02 of F2.
-- So F2, the earlier ES-tuned version, remains the most robust bot we have.
+**The lesson.**
+- RO-PPO learned a real edge against the bot family it trained with, beating F2 0.64 head-to-head.
+- That edge **did not transfer** to independent bots, and it cost 0.08 against strong learned play.
+- The modulator runs (GRPO, ES, CMA-ES) all landed within ±0.02 of F2.
 
-**KSolmann's transformer.**
-- It's a 3M-parameter AverageJoe-style model, trained with JAX PPO on GPUs, and the strongest bot we found.
-- F2 scores **0.27–0.37** against it (100-game slices).
-- It cannot be entered under the stdlib, 150 ms rule.
+Design notes are in [`rl/DESIGN.md`](rl/DESIGN.md) and the timestamped log is in [`rl/board.md`](rl/board.md).
 
-All RL code is in the worktree `.claude/worktrees/rl` (branch `rl-track`):
-- Track A: `rl/hier/`, `rl/final/`;
-- Track C: `rl/c/`;
-- the design notes: `rl/DESIGN.md`;
-- the full log: `rl/board.md`.
+A side finding: the CMA-ES tuner hung twice inside `numpy.linalg.eigh`, which pycma calls in a process that keeps
+forking pool workers. A `faulthandler` watchdog pinned it down. The fix is single-threaded BLAS (`OMP_NUM_THREADS=1`,
+`OPENBLAS_NUM_THREADS=1`).
 
 ---
 
-## 8. Rule compliance
-
-Checked by `tools/check_submission.py`, and by a separate audit in `agents_shared/auditor.md`.
-
-**No copied open-source bot code.** The organizers said open bots are not allowed. We ran a verbatim-copy
-audit (`tools/copy_audit.py submission/<id>.py vendor/ext`) over all 1,104 third-party source files we downloaded (14 repos).
-- Method: comments and whitespace removed, and every shared run of at least 25 consecutive tokens reported.
-- Result: the longest overlap is 31 tokens, the engine-defined direction table
-  `DIRS = ((-1, 0), (1, 0), (0, -1), (0, 1))`.
-- Nothing else is shared. The ideas taken from other bots are credited in the header, and the code was
-  written from scratch.
-
-**The file itself:**
-- One UTF-8 `.py` file of about 92 KB.
-- Imports: `collections`, `gc`, `heapq`, `math`, `time`. Nothing else.
-- No file, network, thread or subprocess use; no `print`; no `eval`/`exec`.
-
-**What it reads:**
-- Only the observation dictionary and its own memory, which the rules allow.
-- No replay feeds, hidden board state or other files.
-
-**What is embedded:**
-- Only numbers produced during the event by our own scripts: `PARAMS`, including the 56 modulator weights, and
-  the 10-weight spawn prior.
-- No third-party code or weights.
-- The neural clones and public bots were **sparring partners only**, and they are not in the file.
-
-**The header:**
-- It discloses the strategy, the embedded constants and how they were made.
-- It names the reused ideas: the pinned engine (MIT), EklipZ, Sentinel and juraj ideas, and the Straka & Schmid
-  paper.
-- It describes the AI assistance (Claude Code).
-- It notes that no AI is called at game time.
-
-**Timing:** typical moves take 2–8 ms in-process. Even under a 3× CPU slowdown on one shared core, moves are far
-below 150 ms (section 7.3).
-
----
-
-## 9. Known weaknesses and next ideas
-
-**Weaknesses**
-- **Economy against the strongest bots.** By turn 300 the clones hold about 1.5–2× our land, and they keep castles.
-  We win by striking first; long games favour them.
-- **Merged attacks.** The garrison need is the *maximum* over single threats. Two stacks that merge next to the
+## 9. Tournament outcome and lessons
+The bot made the **knockout stage (top 16)** and was eliminated in the **round of 16**. We don't have the
+knockout games' logs. These are the takeaways from our own data:
+- **Robustness beats head-to-head gains.** Several candidates beat our own bots but lost ground against
+  independent ones. Evaluate on opponents you didn't train against before adopting anything.
+- **Economy is the open weakness.** By turn 300 the strongest opponents hold 1.5–2× our land and keep their
+  castles. The bot wins by striking first, and long games favour them.
+- **Merged attacks.** The garrison need is the *maximum* over single threats, so two stacks merging next to the
   general can beat it.
-- **Hunter-style aggression.** The final bot's thinner garrison costs a few percent against hunters (0.90–0.96).
-- **Slot asymmetry against the clones.** We score about 0.50 as player 0 and 0.35–0.38 as player 1. It looks like a
-  property of the clones (we are symmetric against t1c), but it is not fully understood.
+- **Knockout series are short.** A 4–6-game series between near-equal bots is close to a coin flip, and small
+  matchup weaknesses decide it.
 
-**Ideas we did not get to**
-- Add a "build" group and a distance-to-enemy feature to the modulator, then run a longer ES with more games per
-  candidate. The es4 run was cut short by a tuner hang; a watchdog is now in place.
-- A merge-aware threat estimate.
-- 2-ply tactical search near the general.
-- A learned "should I launch now?" value from the replays.
+Ideas we didn't get to:
+- a merge-aware threat estimate;
+- 2-ply tactical search near the general;
+- a learned "launch now?" value;
+- longer ES runs with more games per candidate.
 
 ---
 
-## 10. Repository map
+## 10. Rule compliance
+- **Single file, stdlib only:** imports `collections`, `gc`, `heapq`, `math` and `time`. No file, network,
+  thread or subprocess use, no `print`, no `eval`/`exec` (checked by `tools/check_submission.py`).
+- **Inputs:** it reads only the observation dictionary and its own memory.
+- **Embedded numbers:** only parameters produced by our own scripts (`PARAMS`, the modulator and the spawn prior).
+  No third-party code or weights.
+- **No copied bot code:** `tools/copy_audit.py` compared the file with 1,104 third-party source files. The longest
+  shared token run is the engine-defined direction table `DIRS = ((-1, 0), (1, 0), (0, -1), (0, 1))`.
+- **Disclosure:** the file header lists the strategy, the borrowed ideas (with credit) and the AI assistance.
+  The code was written with Claude Code; no AI is called at game time.
+
+---
+
+## 11. Repository layout
 
 | Path | What it is |
 |---|---|
-| `bots/participant.py` | **The bot** (source of the submission; placeholders in the header) |
-| `bots/versions/` | Frozen candidates and A/B variants. `F2.py` = the final parameters applied to `participant.py`. |
-| `bots/opp/` | Sparring partners: zoo, public bots (`ext_*`), behaviour clones (`bc_*`) |
-| `sim/engine.py` | Exact pure-Python replica of the pinned engine (rules, fog observation) |
-| `sim/make_maps.py` | Map pools from the pinned generator (`data/maps.jsonl`, `data/maps_fresh.jsonl`) |
-| `arena/run.py`, `arena/subproc.py` | Fast in-process match runner / realistic subprocess runner (1 core, 150 ms) |
-| `tune/cma_tune.py`, `tune/slurm/*.sbatch` | CMA-ES / ES tuner and the Ada job scripts |
-| `learn/` | Replay download and parsing, action inference, BC dataset and training, spawn-prior training |
-| `tools/` | A/B tools (`abmulti`, `abpool`), gate, submission build/check, loss and economy analysis, map viewer |
-| `tests/` | Engine parity, rules, accounting, tactics (incl. deathtouch guard), robustness |
-| `agents_shared/` | Research and experiment reports from the helper agents; `ROADMAP.md` holds the full experiment log |
-| `runs/` (gitignored) | Tuning outputs; `runs/final_params.json` = the chosen parameter set |
-| `OPEN_QUESTIONS.md` | Questions still waiting for answers |
-| `ada_manifest.txt` | Every path and job we created on Ada |
-
-Local environment: `.venv312/bin/python` with `PYTHONPATH=vendor/generals-bots:.`. The pinned engine lives in
-`vendor/generals-bots`.
+| `submission/saiyam_f2.py` | **The final bot**, a self-contained file |
+| `bots/participant.py` | Bot source with tunable `PARAMS` (the submission = this + `agents_shared/final_params.json`) |
+| `bots/versions/` | Frozen candidates and A/B variants (`F2.py` = final, `F0.py` = without the modulator) |
+| `bots/opp/` | Sparring partners: zoo, public-bot wrappers (`ext_*`), neural clones (`bc_*`) |
+| `sim/` | Exact engine replica (`engine.py`) and map generator export (`make_maps.py`) |
+| `arena/` | Fast in-process runner (`run.py`) and realistic one-core subprocess runner (`subproc.py`) |
+| `tune/` | CMA-ES / ES tuner and SLURM job scripts |
+| `learn/` | Replay download and parsing, action inference, BC datasets and training, spawn-prior training |
+| `rl/` | The RL deep-dive (section 8) |
+| `tools/` | A/B tools, gate, submission build and check, copy audit, loss and economy analysis, viewers |
+| `tests/` | Engine parity, rules, accounting, tactics, robustness |
+| `agents_shared/` | Research and experiment reports from the helper agents; `ROADMAP.md` is the experiment log |
+| `data/` | Small replay-analysis outputs (map pools are generated by `setup.sh`) |
+| `CLAUDE.md`, `OPEN_QUESTIONS.md`, `generals_bot_research_guide.md` | Working notes from the event (agent instructions, open questions, initial research guide) |
 
 ---
 
-## 11. Working on the Ada cluster
+## 12. Running experiments on a SLURM cluster
+Heavy tuning and evaluation ran on a SLURM GPU/CPU cluster. The scripts in `tune/slurm/` and `rl/slurm/` follow
+this pattern:
+1. Rsync the code to a small staging directory in `$HOME`.
+2. Each job copies it to node-local `/scratch/$USER/...`.
+3. The job builds its own `uv` virtualenv there, with every cache pointed at scratch.
+4. It runs, then copies its summaries back.
 
-We use a **guest account**, and the rules are in `CLAUDE.md`. In short:
-- Touch only what we created.
-- Never install globally.
-- Keep caches in our scratch directory.
-- Log every path and job in `ada_manifest.txt`.
+The paths, account and QoS flags are specific to that cluster, so adjust them before use. Example evaluation job:
 
-How our setup works:
-- **Code:** rsync it into `~/botbattle-saiyam/code`. Keep that directory under 200 MB and 2,000 files.
-- **Jobs:** each job copies the code to the node-local `/scratch/$USER/botbattle-saiyam/` and builds its
-  own `uv` venv there.
-- **Results:** jobs copy their summaries back to `~/botbattle-saiyam/results/`.
-- **Typical eval:**
-  ```bash
-  MAPS_FILE=data/maps_fresh.jsonl EVAL_TOOL=tools/abmulti.py sbatch --export=ALL --exclude=gnode007 \
-      -A irel --qos=normal -c 36 --mem=72G --time=04:00:00 --job-name=bb-eval-x \
-      code/tune/slurm/eval.sbatch <tag> 100 0 --bots <bots...> --opps <opps...> --offset <map offset>
-  ```
-- **Quirks:**
-  - gnode007 hangs, so exclude it;
-  - nodes give at most 38 CPUs;
-  - the `irel` account has a group CPU limit;
-  - fresh-map offsets wrap modulo 2,000.
-- **Kept on purpose:** the Ada setup was *not* cleaned up, because more experiments are planned.
+```bash
+MAPS_FILE=data/maps_fresh.jsonl EVAL_TOOL=tools/abmulti.py sbatch --export=ALL -c 36 --mem=72G --time=04:00:00 \
+    code/tune/slurm/eval.sbatch <tag> 100 0 --bots <bots...> --opps <opps...> --offset <map offset>
+```
+
+Use single-threaded BLAS in every job (section 8), and note that held-out map offsets wrap modulo the pool size.
 
 ---
 
-## 12. Still open
-See `OPEN_QUESTIONS.md`. The ones that matter for submitting:
-- **Participant ID and bot name.** They are needed for the file name `participant_id.py` and the header. Pass them
-  to `build_submission.py`.
-- ~~The event's exact adapter / starter kit.~~ **Resolved:**
-  - The organizers' evaluator (`evaluator.zip`) is unpacked in `.claude/worktrees/rl/rl/c/evaluator/` and its
-    Docker image `codebot-python:1` is built locally.
-  - Our simulator reproduces its observations exactly (`rl/c/official_parity.py`).
-  - The submission passes `evaluate.py validate`, and its official-sandbox games are listed in 7.3.
-  - The real deadline from the kit's README is **3 Oct 2026, 2:00 PM IST**.
+## 13. Credits
+- **Engine:** [`strakam/generals-bots`](https://github.com/strakam/generals-bots) (MIT), pinned at `13db8f69`, and
+  the generals.bot competition rules.
+- **Ideas** (no code copied):
+  - [EklipZ's generals-bot](https://github.com/EklipZgit/generals-bot): gather pruning, back-tracing;
+  - relh's Sentinel and juraj's bots: the chase-kill interceptor and the "sweep" kill check;
+  - Straka & Schmid, [arXiv 2507.06825](https://arxiv.org/abs/2507.06825);
+  - statistics from the public generals.bot Marathon replays.
+- **Sparring partners only** (not included): the public bots listed in `agents_shared/bot-scout.md`, and the
+  public generals.bot replays used to train the neural clones.
+- **Built with** [Claude Code](https://claude.com/claude-code). It ran several parallel agents for research,
+  experiments and the RL tracks; their reports are in `agents_shared/` and `rl/agents/`.

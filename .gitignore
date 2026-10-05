@@ -17,3 +17,11 @@ runs/*/league_*.py
 runs/*/self.py
 .scratch/
 data/castle_study_recs*.jsonl
+# organizer materials and local cluster logs (kept out of the public repo)
+Code_Bot_*.pdf
+evaluator.zip
+evaluator/
+rl/c/evaluator/
+ada_manifest.txt
+.claude/
+rl/hier/fetched/*.tgz

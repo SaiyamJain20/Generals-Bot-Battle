@@ -1,0 +1,5 @@
+# Optional: behaviour-cloning sparring partners (learn/, bots/opp/bc_*.py) and the RL learners (rl/).
+# CPU wheels are enough for the RL learners; use a CUDA build for BC training on a GPU.
+-r requirements.txt
+torch==2.6.0
+safetensors

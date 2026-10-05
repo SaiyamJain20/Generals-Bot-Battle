@@ -15,7 +15,7 @@ import argparse
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MASTER = "/home/saiyamjain/Desktop/Bot-Battle/bots/participant.py"
+MASTER = os.path.abspath(os.path.join(HERE, "..", "..", "bots", "participant.py"))
 
 GROUPS = ("launch", "cycle", "capture", "garrison", "scout", "home", "kill", "build")
 NF = 11  # features: 0 phase, 1 army ratio, 2 land ratio, 3 enemy castles, 4 gather style,

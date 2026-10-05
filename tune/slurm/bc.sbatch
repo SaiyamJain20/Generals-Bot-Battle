@@ -9,7 +9,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
 #SBATCH --time=08:00:00
-#SBATCH -o /home2/$USER/botbattle-saiyam/logs/%x-%j.out
+#SBATCH -o /home2/%u/botbattle-saiyam/logs/%x-%j.out
 set -euo pipefail
 H=/home2/$USER/botbattle-saiyam
 S=/scratch/$USER/botbattle-saiyam

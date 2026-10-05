@@ -6,7 +6,7 @@
 #SBATCH -c 4
 #SBATCH --mem=12G
 #SBATCH --time=00:40:00
-#SBATCH -o /home2/$USER/botbattle-saiyam/logs/%x-%j.out
+#SBATCH -o /home2/%u/botbattle-saiyam/logs/%x-%j.out
 set -euo pipefail
 H=/home2/$USER/botbattle-saiyam
 S=/scratch/$USER/botbattle-saiyam
